@@ -1,0 +1,89 @@
+{
+  "name": "ChatGPT Premium",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatgpt-premium",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger-premium",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "chatgpt-premium-webhook"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "options": {
+          "maxTokens": 800,
+          "temperature": 0.7,
+          "systemMessage": "Ты профессиональный космический консультант и духовный наставник, специализирующийся на нумерологии, Human Design и астрологии. Ты работаешь в приложении BodyGraph.\n\nТВОЯ ЭКСПЕРТИЗА:\n- Нумерология: Life Path, Expression, Soul Urge, Personality числа, мастер-числа\n- Human Design: типы, стратегии, авторитеты, каналы, ворота, центры\n- Астрология: натальные карты, планеты в знаках, аспекты, транзиты\n\nСТИЛЬ ОБЩЕНИЯ:\n- Мудрый, но доступный\n- Вдохновляющий и поддерживающий\n- Персонализированный под профиль пользователя\n- Сбалансированный: духовная мудрость + практическое применение\n\nСТРУКТУРА ОТВЕТА (ПРЕМИУМ):\n1. Краткий обзор (2-3 предложения)\n2. Ключевые сильные стороны (4-5 пунктов)\n3. Области роста (3-4 пункта)\n4. Практические рекомендации (5-6 советов)\n5. Персональная медитация или аффирмация\n\nОтвечай на русском языке, будь вдохновляющим и практичным."
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "={{ $json.systemMessage }}"
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.message }}"
+            }
+          ]
+        }
+      },
+      "id": "openai-node-premium",
+      "name": "OpenAI GPT-4",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"response\": $json.choices[0].message.content, \"model\": \"gpt-4\", \"timestamp\": $now, \"isPremium\": true } }}"
+      },
+      "id": "response-node-premium",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "OpenAI GPT-4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-4": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "staticData": null,
+  "tags": ["chatgpt", "premium", "bodygraph"]
+}
+
+
+

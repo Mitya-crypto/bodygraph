@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-space-600;
+  }
+  
+  body {
+    @apply bg-space-900 text-white font-space;
+    background: radial-gradient(ellipse at center, #1e293b 0%, #0f172a 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .cosmic-button {
+    @apply relative overflow-hidden bg-gradient-to-r from-cosmic-600 to-nebula-600 
+           text-white font-bold py-3 px-6 rounded-xl shadow-lg 
+           transform transition-all duration-300 hover:scale-105 
+           hover:shadow-nebula-500/25 active:scale-95;
+  }
+
+  .cosmic-button::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-cosmic-400 to-nebula-400 
+           opacity-0 transition-opacity duration-300;
+  }
+
+  .cosmic-button:hover::before {
+    @apply opacity-100;
+  }
+
+  .cosmic-card {
+    @apply bg-space-800/50 backdrop-blur-sm border border-space-700/50 
+           rounded-2xl shadow-2xl p-6 relative overflow-hidden;
+  }
+
+  .cosmic-card::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-br from-cosmic-500/10 to-nebula-500/10 
+           opacity-0 transition-opacity duration-500;
+  }
+
+  .cosmic-card:hover::before {
+    @apply opacity-100;
+  }
+
+  .cosmic-input {
+    @apply w-full px-4 py-3 bg-space-800/50 border border-space-600/50 
+           rounded-xl text-white placeholder-space-400 
+           focus:outline-none focus:ring-2 focus:ring-cosmic-500 
+           focus:border-cosmic-500 transition-all duration-300;
+  }
+
+  .cosmic-text {
+    @apply text-space-200 leading-relaxed;
+  }
+
+  .cosmic-title {
+    @apply text-3xl font-cosmic font-bold bg-gradient-to-r from-cosmic-400 to-nebula-400 
+           bg-clip-text text-transparent;
+  }
+
+  .cosmic-subtitle {
+    @apply text-xl font-space font-semibold text-cosmic-300;
+  }
+
+  .star-field {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 2s ease-in-out infinite alternate;
+  }
+
+  .star:nth-child(odd) {
+    animation-delay: 1s;
+  }
+
+  .star:nth-child(even) {
+    animation-delay: 2s;
+  }
+
+  .constellation-line {
+    position: absolute;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #0ea5e9, transparent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .nebula-bg {
+    background: radial-gradient(ellipse at 30% 20%, #d946ef 0%, #86198f 30%, #0f172a 100%);
+    animation: nebula 8s ease-in-out infinite;
+  }
+
+  .orbit-ring {
+    position: absolute;
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    border-radius: 50%;
+    animation: orbit 20s linear infinite;
+  }
+
+  .planet {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #fbbf24, #f59e0b);
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .glow-effect {
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.3), 
+                0 0 40px rgba(14, 165, 233, 0.2), 
+                0 0 60px rgba(14, 165, 233, 0.1);
+  }
+
+  .cosmic-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .cosmic-scrollbar::-webkit-scrollbar-track {
+    background: #1e293b;
+    border-radius: 4px;
+  }
+
+  .cosmic-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #0ea5e9, #d946ef);
+    border-radius: 4px;
+  }
+
+  .cosmic-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #38bdf8, #e879f9);
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  .backdrop-blur-cosmic {
+    backdrop-filter: blur(10px) saturate(150%);
+  }
+}

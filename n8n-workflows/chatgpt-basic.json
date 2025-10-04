@@ -1,0 +1,89 @@
+{
+  "name": "ChatGPT Basic",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatgpt-basic",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "chatgpt-basic-webhook"
+    },
+    {
+      "parameters": {
+        "model": "gpt-3.5-turbo",
+        "options": {
+          "maxTokens": 300,
+          "temperature": 0.7,
+          "systemMessage": "Ты базовый AI ассистент в приложении BodyGraph. Помогаешь пользователям с простыми вопросами о нумерологии, Human Design и астрологии.\n\nОтвечай кратко (до 3-4 абзацев), давай только базовые интерпретации. Фокусируйся на основных числах и характеристиках.\n\nОтвечай на русском языке, будь дружелюбным и кратким."
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "={{ $json.systemMessage }}"
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.message }}"
+            }
+          ]
+        }
+      },
+      "id": "openai-node",
+      "name": "OpenAI GPT-3.5",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"response\": $json.choices[0].message.content, \"model\": \"gpt-3.5-turbo\", \"timestamp\": $now } }}"
+      },
+      "id": "response-node",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "OpenAI GPT-3.5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT-3.5": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "staticData": null,
+  "tags": ["chatgpt", "basic", "bodygraph"]
+}
+
+
+

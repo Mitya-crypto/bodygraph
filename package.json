@@ -1,0 +1,44 @@
+{
+  "name": "cosmic-bodygraph-app",
+  "version": "1.0.0",
+  "description": "Cosmic Telegram Mini App for Numerology, Human Design & Astrology",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "dev:debug": "NODE_OPTIONS='--inspect' next dev -p 3001",
+    "dev:force": "lsof -ti:3001 | xargs kill -9 2>/dev/null || true && next dev -p 3001",
+    "dev:clean": "./start-dev.sh",
+    "kill:3001": "lsof -ti:3001 | xargs kill -9 2>/dev/null || true",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.16",
+    "axios": "^1.6.2",
+    "date-fns": "^2.30.0",
+    "framer-motion": "^10.16.16",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "lucide-react": "^0.294.0",
+    "next": "^15.5.2",
+    "openai": "^6.0.0",
+    "postcss": "^8.4.32",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-hook-form": "^7.48.2",
+    "react-hot-toast": "^2.4.1",
+    "swisseph": "^0.5.17",
+    "tailwindcss": "^3.4.0",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "dotenv": "^17.2.3",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^15.5.2",
+    "typescript": "^5.3.3"
+  }
+}
