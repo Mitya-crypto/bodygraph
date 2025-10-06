@@ -23,9 +23,25 @@ export default function Home() {
     
     // Initialize Telegram WebApp
     if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
-      (window as any).Telegram.WebApp.ready()
-      (window as any).Telegram.WebApp.expand()
+      try {
+        const webApp = (window as any).Telegram.WebApp
+        // Telegram WebApp API doesn't have a ready() function
+        // Instead, we just expand the app
+        if (webApp.expand) {
+          webApp.expand()
+        }
+        if (webApp.enableClosingConfirmation) {
+          webApp.enableClosingConfirmation()
+        }
+      } catch (error) {
+        console.warn('Telegram WebApp initialization failed:', error)
+      }
     }
+    
+    // Force reset currentScreen to welcome on mount
+    const { setCurrentScreen } = useAppStore.getState()
+    console.log('🔄 Forcing currentScreen to welcome')
+    setCurrentScreen('welcome')
     
     // Check if user has a profile
     const checkProfile = async () => {
@@ -36,6 +52,7 @@ export default function Home() {
         
         if (!storedProfiles) {
           console.log('❌ No profiles in localStorage, redirecting to registration')
+          setHasProfile(false)
           router.push('/registration')
           return
         }
@@ -51,11 +68,13 @@ export default function Home() {
           console.log('✅ Profile found:', profile.name)
         } else {
           console.log('❌ No profile found, redirecting to registration')
+          setHasProfile(false)
           router.push('/registration')
           return
         }
       } catch (error) {
         console.error('❌ Error checking profiles:', error)
+        setHasProfile(false)
         router.push('/registration')
         return
       }
@@ -77,10 +96,15 @@ export default function Home() {
   }, [setUserProfile, router])
 
   console.log('🎯 Home render - isLoading:', isLoading, 'currentScreen:', currentScreen, 'hasProfile:', hasProfile)
+  
+  // Debug currentScreen changes
+  useEffect(() => {
+    console.log('🔄 currentScreen changed to:', currentScreen)
+  }, [currentScreen])
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-space-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative z-10">
         <motion.div
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -102,12 +126,15 @@ export default function Home() {
   return (
     <>
       <main className="min-h-screen relative overflow-hidden">
-        {currentScreen === 'welcome' && <WelcomeScreen />}
-        {currentScreen === 'profile' && <ProfileScreen />}
-        {currentScreen === 'profile-management' && <ProfileManagementScreen />}
-        {currentScreen === 'modules' && <ModuleSelectionScreen />}
-        {currentScreen === 'results' && <ResultsScreen />}
-        {currentScreen === 'subscription' && <SubscriptionScreen />}
+        {/* StarField is already included in layout.tsx */}
+        <div className="relative z-10">
+          {currentScreen === 'welcome' && <WelcomeScreen />}
+          {currentScreen === 'profile' && <ProfileScreen />}
+          {currentScreen === 'profile-management' && <ProfileManagementScreen />}
+          {currentScreen === 'modules' && <ModuleSelectionScreen />}
+          {currentScreen === 'results' && <ResultsScreen />}
+          {currentScreen === 'subscription' && <SubscriptionScreen />}
+        </div>
       </main>
       
     </>

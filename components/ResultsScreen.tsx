@@ -10,8 +10,13 @@ import { HumanDesignDisplay } from './HumanDesignDisplay'
 import { AstrologyDisplay } from './AstrologyDisplay'
 import { collectAllAssistantData, sendDataToAssistant } from '@/lib/assistantDataCollector'
 
-export function ResultsScreen() {
-  const { setCurrentScreen, selectedModule, userProfile, language } = useAppStore()
+interface ResultsScreenProps {
+  selectedModule?: string
+}
+
+export function ResultsScreen({ selectedModule: propSelectedModule }: ResultsScreenProps = {}) {
+  const { selectedModule: storeSelectedModule, userProfile, language } = useAppStore()
+  const selectedModule = propSelectedModule || storeSelectedModule
   const [isAssistantLoading, setIsAssistantLoading] = useState(false)
   const [assistantMessage, setAssistantMessage] = useState('')
   const position = useRef({ x: 0, y: 0 })
@@ -325,15 +330,13 @@ export function ResultsScreen() {
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <motion.button
-            onClick={() => setCurrentScreen('modules')}
-            className="cosmic-button bg-space-700 hover:bg-space-600 flex items-center justify-center gap-2"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <a 
+            href="/modules"
+            className="cosmic-button bg-space-700 hover:bg-space-600 flex items-center justify-center gap-2 text-center"
           >
             <ArrowLeft className="w-4 h-4" />
             {language === 'ru' ? 'Выбрать другой модуль' : 'Choose Another Module'}
-          </motion.button>
+          </a>
         </div>
       </div>
       {/* Floating Draggable Assistant Button */}

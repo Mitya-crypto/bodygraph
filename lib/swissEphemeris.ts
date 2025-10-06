@@ -233,16 +233,34 @@ export function calculateHouses(julianDay: number, latitude: number, longitude: 
     const houses: HouseData[] = []
     
     // Куспиды домов (1-12)
-    for (let i = 0; i < 12; i++) {
-      const houseLongitude = (result as any).cusps[i + 1] // Дома начинаются с индекса 1
-      const { sign, degree } = longitudeToSign(houseLongitude)
-      
-      houses.push({
-        number: i + 1,
-        longitude: houseLongitude,
-        sign,
-        degree
-      })
+    if ((result as any).cusps && Array.isArray((result as any).cusps)) {
+      for (let i = 0; i < 12; i++) {
+        const houseLongitude = (result as any).cusps[i + 1] // Дома начинаются с индекса 1
+        if (houseLongitude !== undefined) {
+          const { sign, degree } = longitudeToSign(houseLongitude)
+          
+          houses.push({
+            number: i + 1,
+            longitude: houseLongitude,
+            sign,
+            degree
+          })
+        }
+      }
+    } else {
+      console.warn('⚠️ Houses cusps not available, using default houses')
+      // Создаем дома по умолчанию (каждый дом 30 градусов)
+      for (let i = 0; i < 12; i++) {
+        const houseLongitude = i * 30
+        const { sign, degree } = longitudeToSign(houseLongitude)
+        
+        houses.push({
+          number: i + 1,
+          longitude: houseLongitude,
+          sign,
+          degree
+        })
+      }
     }
     
     console.log('✅ Houses calculated:', houses.length, 'houses')

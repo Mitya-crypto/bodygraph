@@ -36,9 +36,9 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
         setIsReady(true)
         
         // Configure WebApp
-        tg.ready()
-        tg.expand()
-        tg.enableClosingConfirmation()
+        // Note: ready() is not a function in Telegram WebApp API
+        if (tg.expand) tg.expand()
+        if (tg.enableClosingConfirmation) tg.enableClosingConfirmation()
         
         // Set theme
         tg.setHeaderColor('#0f172a')

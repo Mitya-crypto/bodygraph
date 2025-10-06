@@ -13,7 +13,6 @@ import { calculateNumerology } from '@/lib/numerology'
 import { calculateHumanDesign } from '@/lib/humanDesignCalculator'
 
 export function WelcomeScreen() {
-  const { setCurrentScreen } = useAppStore()
   const router = useRouter()
   const [userData, setUserData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -125,20 +124,14 @@ export function WelcomeScreen() {
     return signs[signIndex]
   }
 
-  const handleStart = () => {
-    // Кнопка "Начать путешествие" должна открывать экран выбора модулей
-    console.log('🚀 Starting journey - going to modules')
-    setCurrentScreen('modules')
-  }
-
   const handleManageProfiles = () => {
     // Кнопка "Управление профилями" должна открывать экран профиля
     console.log('👤 Managing profiles - going to profile screen')
-    setCurrentScreen('profile')
+    router.push('/profile')
   }
 
   return (
-    <div className="min-h-screen p-6 flex items-center justify-center">
+    <div className="min-h-screen p-6 flex items-center justify-center relative z-10">
       <div className="max-w-2xl mx-auto text-center">
         {/* Header */}
         <motion.div
@@ -225,14 +218,12 @@ export function WelcomeScreen() {
           transition={{ delay: 0.6 }}
           className="space-y-4"
         >
-          <motion.button
-            onClick={handleStart}
-            className="cosmic-button bg-cosmic-500 hover:bg-cosmic-600 text-white text-xl px-8 py-4 w-full"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <a 
+            href="/modules"
+            className="cosmic-button bg-cosmic-500 hover:bg-cosmic-600 text-white text-xl px-8 py-4 w-full rounded-xl transition-colors cursor-pointer inline-block text-center"
           >
             Начать путешествие
-          </motion.button>
+          </a>
 
           <motion.button
             onClick={handleManageProfiles}

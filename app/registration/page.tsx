@@ -7,6 +7,8 @@ import { User, Calendar, MapPin, Clock, ArrowRight, Sparkles } from 'lucide-reac
 import { useAppStore } from '@/store/appStore'
 import { profileManager } from '@/lib/profileManager'
 import { SimpleBirthPlace } from '@/components/SimpleBirthPlace'
+import { MobileDatePicker } from '@/components/MobileDatePicker'
+import { MobileTimePicker } from '@/components/MobileTimePicker'
 
 export default function RegistrationPage() {
   const { setCurrentScreen, setUserProfile, language } = useAppStore()
@@ -44,6 +46,11 @@ export default function RegistrationPage() {
   })
   const [errors, setErrors] = useState<{[key: string]: string}>({})
   const [birthPlaceValid, setBirthPlaceValid] = useState(false)
+  
+  // Debug: Log birthPlaceValid changes
+  useEffect(() => {
+    console.log('🔍 birthPlaceValid changed to:', birthPlaceValid)
+  }, [birthPlaceValid])
 
   // Функция для форматирования ФИО с заглавными буквами
   const formatFullName = (name: string): string => {
@@ -73,6 +80,7 @@ export default function RegistrationPage() {
   }
 
   const handleInputChange = (field: string, value: string) => {
+    console.log('🔍 handleInputChange called:', { field, value })
     // Для поля имени не форматируем при вводе, только при потере фокуса
     setFormData(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
@@ -113,6 +121,7 @@ export default function RegistrationPage() {
   }
 
   const handleSubmit = async () => {
+    console.log('🔍 handleSubmit called - START')
     try {
       console.log('🔍 handleSubmit called')
       console.log('🔍 formData:', formData)
@@ -157,9 +166,11 @@ export default function RegistrationPage() {
       localStorage.setItem('bodygraph-profiles', JSON.stringify(existingProfiles))
       
       // Сохраняем в глобальное состояние
+      console.log('🔍 Setting user profile:', profile)
       setUserProfile(profile)
       
-      // Переходим на страницу WelcomeScreen
+      // Переходим на страницу /welcome
+      console.log('🔍 Navigating to /welcome')
       router.push('/welcome')
       
     } catch (error) {
@@ -276,29 +287,19 @@ export default function RegistrationPage() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-cosmic-300 text-sm mb-2">Дата рождения *</label>
-                  <input
-                    type="date"
-                    value={formData.birthDate}
-                    onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                    className="w-full px-4 py-3 bg-space-700 border border-cosmic-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cosmic-500 focus:border-transparent"
-                  />
-                  {errors.birthDate && (
-                    <p className="text-red-400 text-sm mt-2">{errors.birthDate}</p>
-                  )}
-                </div>
+                <MobileDatePicker
+                  label="Дата рождения *"
+                  value={formData.birthDate}
+                  onChange={(value) => handleInputChange('birthDate', value)}
+                  error={errors.birthDate}
+                />
                 
-                <div>
-                  <label className="block text-cosmic-300 text-sm mb-2">Время рождения</label>
-                  <input
-                    type="time"
-                    value={formData.birthTime}
-                    onChange={(e) => handleInputChange('birthTime', e.target.value)}
-                    className="w-full px-4 py-3 bg-space-700 border border-cosmic-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cosmic-500 focus:border-transparent"
-                  />
-                  <p className="text-cosmic-400 text-xs mt-1">Если не знаете, оставьте 12:00</p>
-                </div>
+                <MobileTimePicker
+                  label="Время рождения"
+                  value={formData.birthTime}
+                  onChange={(value) => handleInputChange('birthTime', value)}
+                  helpText="Если не знаете, оставьте 12:00"
+                />
               </div>
             </div>
           )}
@@ -349,7 +350,10 @@ export default function RegistrationPage() {
               </button>
             ) : (
               <button
-                onClick={handleSubmit}
+                onClick={() => {
+                  console.log('🔍 Button clicked!')
+                  handleSubmit()
+                }}
                 disabled={isLoading}
                 className="px-8 py-3 bg-cosmic-500 text-white rounded-xl hover:bg-cosmic-600 transition-colors flex items-center gap-2 ml-auto cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >

@@ -68,12 +68,12 @@ export async function searchCitiesNominatim(query: string, limit: number = 10): 
       // No country restriction for global search
       `featuretype=city,town,village&` +
       `accept-language=ru,en&` +
-      `email=your-email@example.com&` + // Required for Nominatim
+      `email=bodygraph@example.com&` + // Required for Nominatim
       `dedupe=1`
 
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'BodyGraph/1.0 (your-email@example.com)',
+        'User-Agent': 'BodyGraph/1.0 (bodygraph@example.com)',
         'Accept': 'application/json'
       }
     })
@@ -88,7 +88,7 @@ export async function searchCitiesNominatim(query: string, limit: number = 10): 
     const places: Place[] = data
       .filter(place => {
         // Filter for cities, towns, villages
-        return ['city', 'town', 'village', 'municipality'].includes(place.class) &&
+        return (place.class === 'place' && ['city', 'town', 'village', 'municipality'].includes(place.type)) &&
                place.lat && place.lon
       })
       .map(place => {

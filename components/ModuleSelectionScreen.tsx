@@ -5,7 +5,9 @@ import { useAppStore } from '@/store/appStore'
 import { Calculator, Zap, Star, ArrowLeft } from 'lucide-react'
 
 export function ModuleSelectionScreen() {
-  const { setCurrentScreen, setSelectedModule, language } = useAppStore()
+  const { language } = useAppStore()
+  
+  console.log('🎯 ModuleSelectionScreen rendered!')
 
   const modules = [
     {
@@ -39,10 +41,11 @@ export function ModuleSelectionScreen() {
 
   const handleModuleSelect = (moduleId: string) => {
     console.log('Module selected:', moduleId)
-    setSelectedModule(moduleId)
-    setCurrentScreen('results')
+    window.location.href = `/results?module=${moduleId}`
   }
 
+  console.log('🎯 ModuleSelectionScreen: About to render')
+  
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-4xl mx-auto">
@@ -103,7 +106,7 @@ export function ModuleSelectionScreen() {
 
         {/* Back Button */}
         <motion.button
-          onClick={() => setCurrentScreen('welcome')}
+          onClick={() => window.location.href = '/welcome'}
           className="cosmic-button bg-space-700 hover:bg-space-600 flex items-center justify-center gap-2 mx-auto"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

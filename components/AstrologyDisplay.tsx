@@ -3,10 +3,11 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Star, Sun, Moon, Zap, Target, Heart, Brain, Shield, Users, Globe } from 'lucide-react'
+import { Star, Sun, Moon, Zap, Target, Heart, Brain, Shield, Users, Globe, Download, RefreshCw } from 'lucide-react'
 import { UserProfile } from '@/store/appStore'
 import { fetchAstrologyData, formatProfileForAstrology } from '@/lib/astrologyApi'
 import { NatalChart } from './NatalChart'
+import PDFGenerator from '@/lib/pdfGenerator'
 
 interface AstrologyDisplayProps {
   userProfile: UserProfile
@@ -137,19 +138,66 @@ export function AstrologyDisplay({ userProfile, language }: AstrologyDisplayProp
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'natal' | 'transits'>('natal')
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const [transitsData, setTransitsData] = useState<any>(null)
   const [transitsLoading, setTransitsLoading] = useState(false)
   const [transitsError, setTransitsError] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [lastCalculationHash, setLastCalculationHash] = useState<string>('')
 
   console.log('🔍 AstrologyDisplay received userProfile:', userProfile)
   console.log('🔍 Current activeTab:', activeTab)
 
+  // Проверяем, есть ли необходимые данные профиля
+  if (!userProfile || !userProfile.name || !userProfile.birthDate) {
+    return (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="cosmic-card text-center"
+        >
+          <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-700 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Star className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="cosmic-subtitle text-xl mb-2">
+            {language === 'ru' ? 'Необходим профиль' : 'Profile Required'}
+          </h2>
+          <p className="text-cosmic-300 mb-4">
+            {language === 'ru' 
+              ? 'Для астрологического анализа необходимо создать профиль с данными о рождении.' 
+              : 'A profile with birth data is required for astrological analysis.'
+            }
+          </p>
+        </motion.div>
+      </div>
+    )
+  }
+
+  // Создаем хеш профиля для отслеживания изменений
+  const createProfileHash = (profile: UserProfile): string => {
+    return `${profile.birthDate}-${profile.birthTime}-${profile.coordinates?.lat}-${profile.coordinates?.lng}`
+  }
+
   useEffect(() => {
     if (userProfile && userProfile.name && userProfile.birthDate) {
-      fetchAstrologyDataFromApi()
+      const currentHash = createProfileHash(userProfile)
+      
+      // Пересчитываем только если профиль изменился
+      if (currentHash !== lastCalculationHash) {
+        console.log('🔄 Profile changed, recalculating Astrology...')
+        setLastCalculationHash(currentHash)
+        fetchAstrologyDataFromApi()
+      }
     }
-  }, [userProfile])
+  }, [userProfile?.birthDate, userProfile?.birthTime, userProfile?.coordinates?.lat, userProfile?.coordinates?.lng, lastCalculationHash])
+
+  // Функция принудительного обновления
+  const forceRefresh = () => {
+    console.log('🔄 Force refreshing Astrology calculations...')
+    setLastCalculationHash('') // Сбрасываем хеш для принудительного пересчета
+    fetchAstrologyDataFromApi()
+  }
 
   const fetchAstrologyDataFromApi = async () => {
     setIsLoading(true)
@@ -260,6 +308,30 @@ export function AstrologyDisplay({ userProfile, language }: AstrologyDisplayProp
       setTransitsError(error instanceof Error ? error.message : 'Ошибка расчета транзитов')
     } finally {
       setTransitsLoading(false)
+    }
+  }
+
+  const handleDownloadPDF = async () => {
+    if (!astrologyData) return
+
+    setIsGeneratingPDF(true)
+    try {
+      const blob = await PDFGenerator.generateAstrologyPDF(userProfile, astrologyData)
+      
+      // Создаем ссылку для скачивания
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `astrology-${userProfile.name || 'report'}-${new Date().toISOString().split('T')[0]}.html`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Ошибка при генерации PDF:', error)
+      alert('Произошла ошибка при генерации PDF. Попробуйте еще раз.')
+    } finally {
+      setIsGeneratingPDF(false)
     }
   }
 
@@ -381,6 +453,33 @@ export function AstrologyDisplay({ userProfile, language }: AstrologyDisplayProp
 
   return (
     <div className="space-y-6">
+      {/* Кнопки управления */}
+      <div className="flex justify-between items-center mb-4">
+        <button
+          onClick={forceRefresh}
+          disabled={isLoading}
+          className="flex items-center gap-2 px-4 py-2 bg-cosmic-500 hover:bg-cosmic-600 disabled:bg-space-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          {isLoading 
+            ? (language === 'ru' ? 'Обновление...' : 'Updating...')
+            : (language === 'ru' ? 'Обновить' : 'Refresh')
+          }
+        </button>
+        
+        <button
+          onClick={handleDownloadPDF}
+          disabled={isGeneratingPDF || !astrologyData}
+          className="flex items-center gap-2 px-4 py-2 bg-cosmic-600 hover:bg-cosmic-700 disabled:bg-space-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          {isGeneratingPDF 
+            ? (language === 'ru' ? 'Генерация...' : 'Generating...')
+            : (language === 'ru' ? 'Скачать PDF' : 'Download PDF')
+          }
+        </button>
+      </div>
+
       {/* Табы для переключения между натальной картой и транзитами */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -442,11 +541,12 @@ export function AstrologyDisplay({ userProfile, language }: AstrologyDisplayProp
 
             {/* Основные элементы - Солнце, Луна, Асцендент */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <motion.div
+              <motion.a
+          href={`/astrology/house/${astrologyData.sun.house}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="cosmic-card text-center"
+          className="cosmic-card text-center cursor-pointer hover:bg-space-700/50 transition-colors block"
         >
           <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-full flex items-center justify-center mx-auto mb-3">
             <Sun className="w-6 h-6 text-white" />
@@ -466,13 +566,14 @@ export function AstrologyDisplay({ userProfile, language }: AstrologyDisplayProp
           <p className="text-xs text-cosmic-400 italic border-t border-cosmic-700 pt-2">
             {getHouseDescription(astrologyData.sun.house)}
           </p>
-        </motion.div>
+        </motion.a>
 
-        <motion.div
+        <motion.a
+          href={`/astrology/house/${astrologyData.moon.house}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="cosmic-card text-center"
+          className="cosmic-card text-center cursor-pointer hover:bg-space-700/50 transition-colors block"
         >
           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center mx-auto mb-3">
             <Moon className="w-6 h-6 text-white" />
@@ -492,13 +593,14 @@ export function AstrologyDisplay({ userProfile, language }: AstrologyDisplayProp
           <p className="text-xs text-cosmic-400 italic border-t border-cosmic-700 pt-2">
             {getHouseDescription(astrologyData.moon.house)}
           </p>
-        </motion.div>
+        </motion.a>
 
-        <motion.div
+        <motion.a
+          href="/astrology/house/1"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="cosmic-card text-center"
+          className="cosmic-card text-center cursor-pointer hover:bg-space-700/50 transition-colors block"
         >
           <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center mx-auto mb-3">
             <Star className="w-6 h-6 text-white" />
@@ -518,7 +620,7 @@ export function AstrologyDisplay({ userProfile, language }: AstrologyDisplayProp
           <p className="text-xs text-cosmic-400 italic border-t border-cosmic-700 pt-2 mt-2">
             {getHouseDescription(1)}
           </p>
-        </motion.div>
+        </motion.a>
       </div>
 
       {/* Планеты */}
@@ -534,7 +636,7 @@ export function AstrologyDisplay({ userProfile, language }: AstrologyDisplayProp
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {astrologyData.planets.map((planet, index) => (
-            <div key={index} className="p-3 bg-space-800/50 rounded-lg">
+            <a key={index} href={`/astrology/house/${planet.house}`} className="p-3 bg-space-800/50 rounded-lg cursor-pointer hover:bg-space-700/50 transition-colors block">
               <div className="flex items-center justify-between mb-2">
                 <div className="font-semibold text-cosmic-300">
                   {translatePlanetName(planet.name)}
@@ -549,7 +651,7 @@ export function AstrologyDisplay({ userProfile, language }: AstrologyDisplayProp
               <div className="text-xs text-cosmic-600">
                 {planet.degree.toFixed(1)}°
               </div>
-            </div>
+            </a>
           ))}
         </div>
       </motion.div>
@@ -607,7 +709,7 @@ export function AstrologyDisplay({ userProfile, language }: AstrologyDisplayProp
                 </div>
               </div>
               <div className="text-xs text-cosmic-600 mb-1">
-                {house.degree.toFixed(1)}°
+                {house.degree ? house.degree.toFixed(1) : '0.0'}°
               </div>
               <p className="text-xs text-cosmic-500">
                 {house.description}
@@ -866,11 +968,12 @@ export function AstrologyDisplay({ userProfile, language }: AstrologyDisplayProp
                               <p className="text-xs text-cosmic-500">
                                 Длительность: {transit.influence.duration}
                               </p>
-                            )}
-                          </div>
-                        </div>
-                        )
-                      })}
+        )}
+      </div>
+
+    </div>
+  )
+})}
                     </div>
                   </motion.div>
                 )}

@@ -3,12 +3,6 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
-  // Отключаем Turbopack для стабильности
-  experimental: {
-    turbo: {
-      rules: {}
-    }
-  },
   webpack: (config) => {
     config.externals.push({
       'swisseph': 'commonjs swisseph'

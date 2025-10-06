@@ -10,7 +10,7 @@ import { profileManager } from '@/lib/profileManager'
 import { useAppStore } from '@/store/appStore'
 
 export function ProfileManagementScreen() {
-  const { setCurrentScreen, setUserProfile, language } = useAppStore()
+  const { setUserProfile, language } = useAppStore()
   const [telegramId, setTelegramId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<'profiles' | 'subscription'>('profiles')
   const [subscription, setSubscription] = useState<any>(null)
@@ -55,7 +55,7 @@ export function ProfileManagementScreen() {
     })
     setUserProfile(profile.profile) // Устанавливаем данные профиля
     console.log('🎯 UserProfile set in store:', profile.profile)
-    setCurrentScreen('modules')
+    window.location.href = '/modules'
   }
 
   // Функция редактирования профиля удалена - профили нельзя изменять
@@ -85,12 +85,12 @@ export function ProfileManagementScreen() {
           className="mb-8"
         >
           <div className="flex items-center gap-4 mb-6">
-            <button
-              onClick={() => setCurrentScreen('welcome')}
+            <a 
+              href="/welcome"
               className="cosmic-button bg-space-700 hover:bg-space-600 p-2"
             >
               <ArrowLeft className="w-5 h-5" />
-            </button>
+            </a>
             <div>
               <h1 className="cosmic-title text-3xl">
                 {language === 'ru' ? 'Управление профилями' : 'Profile Management'}

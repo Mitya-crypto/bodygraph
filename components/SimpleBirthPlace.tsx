@@ -129,6 +129,12 @@ export function SimpleBirthPlace({
         // Only mark as valid if we have a selected place or valid coordinates
         const hasValidCoords = values.birthCoordinates && /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/.test(values.birthCoordinates.trim())
         const isValid = selectedPlace || hasValidCoords
+        console.log('🔍 SimpleBirthPlace validation:', {
+          selectedPlace: !!selectedPlace,
+          hasValidCoords,
+          isValid,
+          birthCoordinates: values.birthCoordinates
+        })
         onValidationChange(!!isValid)
       } catch (error) {
         console.error('Search error:', error)
@@ -225,6 +231,7 @@ export function SimpleBirthPlace({
   }
 
   const handlePlaceSelect = (place: Place) => {
+    console.log('🔍 handlePlaceSelect called with:', place)
     onChange('birthPlace', place.name)
     onChange('birthCoordinates', `${place.coordinates.lat}, ${place.coordinates.lng}`)
     setSelectedPlace(place)
@@ -232,6 +239,7 @@ export function SimpleBirthPlace({
     setSuggestions([]) // Очищаем список предложений
     setAutoComplete('') // Очищаем автозаполнение
     setIsValid(true)
+    console.log('🔍 Setting validation to true for selected place')
     onValidationChange(true)
   }
 

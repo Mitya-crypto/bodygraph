@@ -30,7 +30,7 @@ export function ProfileList({
   const [isLoading, setIsLoading] = useState(true)
   const [subscription, setSubscription] = useState<any>(null)
   // Модальное окно редактирования удалено
-  const { setUserProfile, setCurrentScreen } = useAppStore()
+  const { setUserProfile } = useAppStore()
 
   console.log('ProfileList props:', { 
     telegramId, 
@@ -86,7 +86,7 @@ export function ProfileList({
     if (onProfileSelect) {
       onProfileSelect(profile)
     } else {
-      setCurrentScreen('modules')
+      window.location.href = '/modules'
     }
   }
 

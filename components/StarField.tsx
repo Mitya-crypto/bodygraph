@@ -6,15 +6,25 @@ export function StarField() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
+    console.log('🚀 StarField: useEffect triggered')
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas) {
+      console.log('❌ StarField: Canvas not found')
+      return
+    }
 
     const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {
+      console.log('❌ StarField: Canvas context not found')
+      return
+    }
+
+    console.log('✅ StarField: Initializing star field animation')
 
     const resizeCanvas = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      console.log('📏 StarField: Canvas resized to', canvas.width, 'x', canvas.height)
     }
 
     resizeCanvas()
@@ -98,19 +108,25 @@ export function StarField() {
       animationId = requestAnimationFrame(animate)
     }
 
+    console.log('🚀 StarField: Starting animation with', stars.length, 'stars')
     animate()
 
     return () => {
+      console.log('🧹 StarField: Cleaning up animation')
       window.removeEventListener('resize', resizeCanvas)
       cancelAnimationFrame(animationId)
     }
   }, [])
 
+  console.log('🎨 StarField: Rendering canvas')
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-0"
-      style={{ background: 'transparent' }}
+      className="fixed inset-0 pointer-events-none z-1"
+      style={{ 
+        background: 'transparent',
+        border: '1px solid rgba(255, 0, 0, 0.3)' // Временная красная граница для отладки
+      }}
     />
   )
 }

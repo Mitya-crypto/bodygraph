@@ -1,8 +1,8 @@
 'use client'
 
-import { use as usePromise } from 'react'
+import React, { use as usePromise } from 'react'
 import { useAppStore } from '@/store/appStore'
-import { calculateHumanDesign } from '@/lib/humanDesignCalculator'
+import { calculateHumanDesign } from '@/lib/humanDesignEngine'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Shield } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -33,249 +33,71 @@ export default function HumanDesignIncarnationCrossPage({ params }: PageProps) {
   const birthDate = new Date(userProfile.birthDate)
   const birthTime = new Date(`2000-01-01T${userProfile.birthTime}`)
 
-  const humanDesignData = calculateHumanDesign({
-    year: birthDate.getFullYear(),
-    month: birthDate.getMonth() + 1,
-    day: birthDate.getDate(),
-    hour: birthTime.getHours(),
-    minute: birthTime.getMinutes(),
-    latitude: userProfile.coordinates?.lat || 0,
-    longitude: userProfile.coordinates?.lng || 0
-  })
+  // Используем данные из Human Design Engine через API
+  const [humanDesignData, setHumanDesignData] = React.useState<any>(null)
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    const fetchHumanDesignData = async () => {
+      try {
+        const response = await fetch('/api/human-design/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            birthDate: userProfile.birthDate,
+            birthTime: userProfile.birthTime,
+            latitude: userProfile.coordinates?.lat || 0,
+            longitude: userProfile.coordinates?.lng || 0
+          })
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setHumanDesignData(data)
+        }
+      } catch (error) {
+        console.error('Error fetching Human Design data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchHumanDesignData()
+  }, [userProfile])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-space-900 flex items-center justify-center">
+        <div className="cosmic-card text-center">
+          <p className="text-cosmic-300">Загрузка...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!humanDesignData) {
+    return (
+      <div className="min-h-screen bg-space-900 flex items-center justify-center">
+        <div className="cosmic-card text-center">
+          <p className="text-cosmic-300">Ошибка загрузки данных Human Design.</p>
+        </div>
+      </div>
+    )
+  }
 
   const currentCross = humanDesignData.incarnationCross
 
-  const getCrossDescription = (cross: string) => {
-    const descriptions = {
-      ru: {
-        'Right Angle Cross of the Sphinx': {
-          title: 'Правый Угловой Крест Сфинкса',
-          subtitle: 'Загадка и мудрость',
-          description: 'Ваш инкарнационный крест связан с загадкой, мудростью и глубоким пониманием жизни. Вы пришли в этот мир, чтобы раскрывать тайны и делиться мудростью с другими.',
-          characteristics: [
-            'Глубокая мудрость и понимание',
-            'Способность к разгадыванию загадок',
-            'Интуитивное знание',
-            'Стремление к истине'
-          ],
-          mission: [
-            'Раскрывать тайны жизни',
-            'Делиться мудростью с другими',
-            'Помогать людям находить ответы',
-            'Быть проводником к истине'
-          ],
-          strengths: [
-            'Глубокая интуиция',
-            'Способность к анализу',
-            'Мудрость в принятии решений',
-            'Умение видеть суть вещей'
-          ],
-          challenges: [
-            'Может быть слишком загадочным',
-            'Сложности с простыми объяснениями',
-            'Потребность в глубоком понимании',
-            'Изоляция от поверхностности'
-          ],
-          advice: [
-            'Доверяйте своей интуиции',
-            'Делитесь мудростью доступно',
-            'Ищите единомышленников',
-            'Развивайте терпение к другим'
-          ]
-        },
-        'Left Angle Cross of the Sphinx': {
-          title: 'Левый Угловой Крест Сфинкса',
-          subtitle: 'Загадка и трансформация',
-          description: 'Ваш инкарнационный крест связан с трансформацией через загадки и тайны. Вы пришли, чтобы помочь другим проходить через изменения и находить новые решения.',
-          characteristics: [
-            'Способность к трансформации',
-            'Понимание циклов изменений',
-            'Глубокое проникновение в суть',
-            'Стремление к эволюции'
-          ],
-          mission: [
-            'Помогать в трансформации',
-            'Раскрывать новые возможности',
-            'Быть проводником изменений',
-            'Показывать путь к росту'
-          ],
-          strengths: [
-            'Гибкость в изменениях',
-            'Способность к адаптации',
-            'Глубокое понимание процессов',
-            'Умение видеть потенциал'
-          ],
-          challenges: [
-            'Сопротивление стабильности',
-            'Сложности с рутиной',
-            'Потребность в постоянных изменениях',
-            'Изоляция от консервативности'
-          ],
-          advice: [
-            'Принимайте изменения как естественный процесс',
-            'Помогайте другим адаптироваться',
-            'Ищите баланс между стабильностью и ростом',
-            'Доверяйте процессу трансформации'
-          ]
-        },
-        'Juxtaposition Cross of the Sphinx': {
-          title: 'Крест Противопоставления Сфинкса',
-          subtitle: 'Парадокс и баланс',
-          description: 'Ваш инкарнационный крест связан с пониманием парадоксов и поиском баланса между противоположностями. Вы пришли, чтобы показать, как объединить кажущиеся противоречия.',
-          characteristics: [
-            'Понимание парадоксов',
-            'Способность к синтезу',
-            'Баланс противоположностей',
-            'Глубокое понимание двойственности'
-          ],
-          mission: [
-            'Объединять противоположности',
-            'Показывать единство в различиях',
-            'Создавать гармонию из хаоса',
-            'Быть мостом между мирами'
-          ],
-          strengths: [
-            'Способность к синтезу',
-            'Понимание сложности',
-            'Умение находить общее',
-            'Гибкость мышления'
-          ],
-          challenges: [
-            'Сложности с простыми решениями',
-            'Потребность в глубоком понимании',
-            'Изоляция от поверхностности',
-            'Сопротивление упрощениям'
-          ],
-          advice: [
-            'Ищите общее в различиях',
-            'Развивайте терпение к сложности',
-            'Помогайте другим видеть единство',
-            'Доверяйте процессу синтеза'
-          ]
-        }
-      },
-      en: {
-        'Right Angle Cross of the Sphinx': {
-          title: 'Right Angle Cross of the Sphinx',
-          subtitle: 'Mystery and wisdom',
-          description: 'Your incarnation cross is connected to mystery, wisdom, and deep understanding of life. You came to this world to reveal mysteries and share wisdom with others.',
-          characteristics: [
-            'Deep wisdom and understanding',
-            'Ability to solve mysteries',
-            'Intuitive knowledge',
-            'Quest for truth'
-          ],
-          mission: [
-            'Reveal life mysteries',
-            'Share wisdom with others',
-            'Help people find answers',
-            'Be a guide to truth'
-          ],
-          strengths: [
-            'Deep intuition',
-            'Analytical ability',
-            'Wisdom in decision-making',
-            'Ability to see the essence'
-          ],
-          challenges: [
-            'May be too mysterious',
-            'Difficulties with simple explanations',
-            'Need for deep understanding',
-            'Isolation from superficiality'
-          ],
-          advice: [
-            'Trust your intuition',
-            'Share wisdom accessibly',
-            'Seek like-minded people',
-            'Develop patience with others'
-          ]
-        },
-        'Left Angle Cross of the Sphinx': {
-          title: 'Left Angle Cross of the Sphinx',
-          subtitle: 'Mystery and transformation',
-          description: 'Your incarnation cross is connected to transformation through mysteries and secrets. You came to help others go through changes and find new solutions.',
-          characteristics: [
-            'Ability to transform',
-            'Understanding of change cycles',
-            'Deep penetration into essence',
-            'Striving for evolution'
-          ],
-          mission: [
-            'Help in transformation',
-            'Reveal new possibilities',
-            'Be a guide of changes',
-            'Show the path to growth'
-          ],
-          strengths: [
-            'Flexibility in changes',
-            'Ability to adapt',
-            'Deep understanding of processes',
-            'Ability to see potential'
-          ],
-          challenges: [
-            'Resistance to stability',
-            'Difficulties with routine',
-            'Need for constant changes',
-            'Isolation from conservatism'
-          ],
-          advice: [
-            'Accept changes as natural process',
-            'Help others adapt',
-            'Seek balance between stability and growth',
-            'Trust the transformation process'
-          ]
-        },
-        'Juxtaposition Cross of the Sphinx': {
-          title: 'Juxtaposition Cross of the Sphinx',
-          subtitle: 'Paradox and balance',
-          description: 'Your incarnation cross is connected to understanding paradoxes and finding balance between opposites. You came to show how to unite seeming contradictions.',
-          characteristics: [
-            'Understanding of paradoxes',
-            'Ability to synthesize',
-            'Balance of opposites',
-            'Deep understanding of duality'
-          ],
-          mission: [
-            'Unite opposites',
-            'Show unity in differences',
-            'Create harmony from chaos',
-            'Be a bridge between worlds'
-          ],
-          strengths: [
-            'Ability to synthesize',
-            'Understanding of complexity',
-            'Ability to find common ground',
-            'Flexibility of thinking'
-          ],
-          challenges: [
-            'Difficulties with simple solutions',
-            'Need for deep understanding',
-            'Isolation from superficiality',
-            'Resistance to simplifications'
-          ],
-          advice: [
-            'Seek common ground in differences',
-            'Develop patience with complexity',
-            'Help others see unity',
-            'Trust the synthesis process'
-          ]
-        }
-      }
-    }
-    const dict = descriptions[language as 'ru' | 'en'] as any
-    return dict[cross] || {
-      title: cross,
-      subtitle: '',
-      description: language === 'ru' ? 'Описание не найдено.' : 'Description not found.',
-      characteristics: [],
-      mission: [],
-      strengths: [],
-      challenges: [],
-      advice: []
-    }
+  // Используем данные напрямую из API
+  const current = {
+    title: currentCross.name,
+    subtitle: language === 'ru' ? 'Трансформация и возрождение' : 'Transformation and rebirth',
+    description: currentCross.description,
+    characteristics: currentCross.characteristics || [],
+    mission: currentCross.lifeMission || [],
+    strengths: currentCross.strengths || [],
+    challenges: currentCross.challenges || [],
+    advice: currentCross.advice || []
   }
-
-  const current = getCrossDescription(currentCross)
 
   return (
     <div className="min-h-screen bg-space-900 py-8">
@@ -285,7 +107,7 @@ export default function HumanDesignIncarnationCrossPage({ params }: PageProps) {
             onClick={() => {
               setSelectedModule('human-design')
               setCurrentScreen('results')
-              router.push('/')
+              router.push('/results?module=human-design')
             }}
             className="inline-flex items-center gap-2 text-cosmic-400 hover:text-cosmic-300 transition-colors"
           >

@@ -385,7 +385,7 @@ export default function HumanDesignDefinitionPage({ params }: PageProps) {
             onClick={() => {
               setSelectedModule('human-design')
               setCurrentScreen('results')
-              router.push('/')
+              router.push('/results?module=human-design')
             }}
             className="inline-flex items-center gap-2 text-cosmic-400 hover:text-cosmic-300 transition-colors"
           >

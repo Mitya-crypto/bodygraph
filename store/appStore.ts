@@ -170,8 +170,10 @@ export const useAppStore = create<AppState>()(
       // Navigation
       currentScreen: 'welcome',
       setCurrentScreen: (screen) => {
-        console.log('Setting current screen to:', screen)
+        console.log('🏪 Store: Setting current screen to:', screen)
+        console.log('🏪 Store: Previous screen was:', get().currentScreen)
         set({ currentScreen: screen })
+        console.log('🏪 Store: New screen is:', get().currentScreen)
       },
       
       // Selected module
@@ -230,6 +232,7 @@ export const useAppStore = create<AppState>()(
         subscriptionExpiry: state.subscriptionExpiry,
         calculationHistory: state.calculationHistory,
         language: state.language,
+        currentScreen: state.currentScreen, // Добавляем currentScreen в persist
       }),
     }
   )

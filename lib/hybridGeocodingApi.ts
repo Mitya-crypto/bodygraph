@@ -164,8 +164,8 @@ export function getApiStatus() {
       key: 'Free (OpenStreetMap)'
     },
     mapbox: {
-      available: !!process.env.MAPBOX_ACCESS_TOKEN,
-      key: process.env.MAPBOX_ACCESS_TOKEN ? '***' + process.env.MAPBOX_ACCESS_TOKEN.slice(-4) : 'Not set'
+      available: !!(process.env.MAPBOX_ACCESS_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN),
+      key: (process.env.MAPBOX_ACCESS_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) ? '***' + (process.env.MAPBOX_ACCESS_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN)!.slice(-4) : 'Not set'
     }
   }
 }

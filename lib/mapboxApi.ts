@@ -84,7 +84,7 @@ export async function searchCitiesMapBox(query: string, limit: number = 10): Pro
     console.log(`🔍 MapBox v6: Searching for "${query}"`)
     
     // Check if API token is available
-    const accessToken = process.env.MAPBOX_ACCESS_TOKEN
+    const accessToken = process.env.MAPBOX_ACCESS_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
     if (!accessToken) {
       console.warn('⚠️ MapBox access token not configured')
       return []

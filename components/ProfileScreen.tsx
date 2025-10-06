@@ -9,7 +9,7 @@ import { profileManager } from '@/lib/profileManager'
 import toast from 'react-hot-toast'
 
 export function ProfileScreen() {
-  const { setCurrentScreen, userProfile, language } = useAppStore()
+  const { userProfile, language } = useAppStore()
   const [telegramId, setTelegramId] = useState<number | null>(null)
   const [subscription, setSubscription] = useState<any>(null)
   const [showSubscription, setShowSubscription] = useState(false)
@@ -76,12 +76,12 @@ export function ProfileScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-4 mb-8"
         >
-          <button
-            onClick={() => setCurrentScreen('welcome')}
+          <a 
+            href="/welcome"
             className="p-2 bg-space-700 hover:bg-space-600 rounded-xl transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-cosmic-300" />
-          </button>
+          </a>
           <div>
             <h1 className="text-3xl font-bold text-white">Профиль</h1>
             <p className="text-cosmic-300">Ваши персональные данные</p>
@@ -205,7 +205,7 @@ export function ProfileScreen() {
           </button>
           
           <button
-            onClick={() => setCurrentScreen('welcome')}
+            onClick={() => window.location.href = '/welcome'}
             className="flex-1 px-6 py-3 bg-space-700 hover:bg-space-600 text-cosmic-300 rounded-xl transition-colors"
           >
             Назад к главной

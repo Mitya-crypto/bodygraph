@@ -3,10 +3,12 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Zap, Target, Heart, Brain, Shield, Star, Users } from 'lucide-react'
+import { User, Zap, Target, Heart, Brain, Shield, Star, Users, Download } from 'lucide-react'
 import { UserProfile } from '@/store/appStore'
 import { fetchHumanDesignData, formatProfileForHumanDesign } from '@/lib/humanDesignApi'
+import { calculateHumanDesign } from '@/lib/humanDesignEngine'
 import { useRouter } from 'next/navigation'
+import PDFGenerator from '@/lib/pdfGenerator'
 
 interface HumanDesignDisplayProps {
   userProfile: UserProfile
@@ -41,29 +43,124 @@ export function HumanDesignDisplay({ userProfile, language }: HumanDesignDisplay
   const [humanDesignData, setHumanDesignData] = useState<HumanDesignData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [lastCalculationHash, setLastCalculationHash] = useState<string>('')
   const router = useRouter()
 
   console.log('🔍 HumanDesignDisplay received userProfile:', userProfile)
 
+  // Проверяем, есть ли необходимые данные профиля
+  if (!userProfile || !userProfile.name || !userProfile.birthDate) {
+    return (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="cosmic-card text-center"
+        >
+          <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-700 rounded-full flex items-center justify-center mx-auto mb-4">
+            <User className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="cosmic-subtitle text-xl mb-2">
+            {language === 'ru' ? 'Необходим профиль' : 'Profile Required'}
+          </h2>
+          <p className="text-cosmic-300 mb-4">
+            {language === 'ru' 
+              ? 'Для анализа Human Design необходимо создать профиль с данными о рождении.' 
+              : 'A profile with birth data is required for Human Design analysis.'
+            }
+          </p>
+        </motion.div>
+      </div>
+    )
+  }
+
+  // Создаем хеш профиля для отслеживания изменений
+  const createProfileHash = (profile: UserProfile): string => {
+    return `${profile.birthDate}-${profile.birthTime}-${profile.coordinates?.lat}-${profile.coordinates?.lng}`
+  }
+
   useEffect(() => {
     if (userProfile && userProfile.name && userProfile.birthDate) {
-      fetchHumanDesignDataFromApi()
+      const currentHash = createProfileHash(userProfile)
+      
+      // Пересчитываем только если профиль изменился
+      if (currentHash !== lastCalculationHash) {
+        console.log('🔄 Profile changed, recalculating Human Design...')
+        setLastCalculationHash(currentHash)
+        fetchHumanDesignDataFromApi()
+      }
     }
-  }, [userProfile])
+  }, [userProfile?.birthDate, userProfile?.birthTime, userProfile?.coordinates?.lat, userProfile?.coordinates?.lng, lastCalculationHash])
+
 
   const fetchHumanDesignDataFromApi = async () => {
     setIsLoading(true)
     setError(null)
 
     try {
-      // Форматируем данные профиля для API
+      console.log('🔄 Fetching Human Design data for profile:', userProfile)
+
+      // Сначала пробуем новую библиотеку Human Design Engine
+      try {
+        const [year, month, day] = userProfile.birthDate.split('-').map(Number)
+        const [hour, minute] = userProfile.birthTime.split(':').map(Number)
+        
+        const birthData = {
+          year,
+          month,
+          day,
+          hour: hour || 0,
+          minute: minute || 0,
+          second: 0,
+          latitude: userProfile.coordinates?.lat || 0,
+          longitude: userProfile.coordinates?.lng || 0,
+          timezone: 0
+        }
+
+        console.log('🔄 Calculating with Human Design Engine:', birthData)
+        const engineResult = await calculateHumanDesign(birthData)
+        console.log('✅ Human Design Engine result:', engineResult)
+        
+        // Адаптируем результат под наш интерфейс
+        const adaptedData: HumanDesignData = {
+          type: engineResult.type,
+          strategy: engineResult.strategy,
+          authority: engineResult.authority,
+          profile: engineResult.profile,
+          definition: engineResult.definition,
+          innerAuthority: engineResult.authority,
+          incarnationCross: engineResult.incarnationCross.name,
+          channels: engineResult.channels.map(channel => ({
+            number: channel.number,
+            name: channel.name,
+            description: channel.description
+          })),
+          gates: engineResult.gates.map(gate => ({
+            number: gate.number.toString(),
+            name: gate.name,
+            description: `Ворота ${gate.number}: ${gate.name}`
+          })),
+          centers: {
+            defined: engineResult.centers.filter(c => c.defined).map(c => c.name),
+            undefined: engineResult.centers.filter(c => !c.defined).map(c => c.name)
+          }
+        }
+        
+        setHumanDesignData(adaptedData)
+        return
+      } catch (engineError) {
+        console.warn('⚠️ Human Design Engine failed, falling back to API:', engineError)
+      }
+
+      // Fallback к старому API
       const apiRequest = formatProfileForHumanDesign(userProfile)
       
       if (!apiRequest) {
         throw new Error('Invalid profile data for Human Design')
       }
 
-      console.log('🔄 Fetching Human Design data:', apiRequest)
+      console.log('🔄 Fetching Human Design data from API:', apiRequest)
 
       // Получаем данные через API
       const apiData = await fetchHumanDesignData(apiRequest)
@@ -143,16 +240,157 @@ export function HumanDesignDisplay({ userProfile, language }: HumanDesignDisplay
         Respond: 'Отвечайте на жизненные запросы',
         Initiate: 'Инициируйте и действуйте',
         Wait: 'Ждите приглашения',
+        'Wait for invitation': 'Ждите приглашения',
         'Wait for lunar cycle': 'Ждите лунный цикл'
       },
       en: {
         Respond: 'Respond to life\'s requests',
         Initiate: 'Initiate and act',
         Wait: 'Wait for invitation',
+        'Wait for invitation': 'Wait for invitation',
         'Wait for lunar cycle': 'Wait for lunar cycle'
       }
     }
     return descriptions[language][strategy as keyof typeof descriptions[typeof language]] || strategy
+  }
+
+  const getStrategyNameRu = (strategy: string) => {
+    const translations = {
+      'Respond': 'Отвечать',
+      'Initiate': 'Инициировать',
+      'Wait': 'Ждать',
+      'Wait for invitation': 'Ждать приглашения',
+      'Wait for lunar cycle': 'Ждать лунный цикл'
+    }
+    return translations[strategy as keyof typeof translations] || strategy
+  }
+
+  const getAuthorityNameRu = (authority: string) => {
+    const translations = {
+      'Sacral': 'Сакральный',
+      'Solar Plexus': 'Солнечное сплетение',
+      'Spleen': 'Селезенка',
+      'Heart': 'Сердце',
+      'G-Center': 'G-Центр',
+      'Root': 'Корень',
+      'Throat': 'Горло',
+      'Ajna': 'Аджана',
+      'Head': 'Голова',
+      'Lunar': 'Лунный',
+      'Environmental': 'Окружающая среда',
+      'Ego': 'Эго',
+      'Self': 'Я'
+    }
+    return translations[authority as keyof typeof translations] || authority
+  }
+
+  const getDefinitionNameRu = (definition: string) => {
+    const translations = {
+      'Single Definition': 'Единое определение',
+      'Split Definition': 'Разделенное определение',
+      'Triple Split Definition': 'Тройное разделенное определение',
+      'Quadruple Split Definition': 'Четверное разделенное определение',
+      'No Definition': 'Без определения'
+    }
+    return translations[definition as keyof typeof translations] || definition
+  }
+
+  const getIncarnationCrossNameRu = (incarnationCross: any) => {
+    const translations = {
+      'Cross of Planning': 'Крест планирования',
+      'Cross of Laws': 'Крест законов',
+      'Right Angle Cross of the Sleeping Phoenix': 'Правый угловой крест спящего феникса'
+    }
+    return translations[incarnationCross.name as keyof typeof translations] || incarnationCross.name
+  }
+
+  const getIncarnationCrossDescriptionRu = (incarnationCross: any) => {
+    const descriptions = {
+      'Cross of Planning': 'Крест планирования представляет способность к стратегическому мышлению и долгосрочному планированию. Люди с этим крестом обладают уникальной способностью видеть будущее и создавать планы для достижения целей.',
+      'Cross of Laws': 'Крест законов представляет понимание естественных законов и принципов. Люди с этим крестом обладают глубоким пониманием того, как устроен мир, и могут применять эти знания для создания порядка и гармонии.',
+      'Right Angle Cross of the Sleeping Phoenix': 'Правый угловой крест спящего феникса представляет трансформацию через сон и пробуждение. Люди с этим крестом проходят через глубокие внутренние изменения и возрождение, как феникс из пепла.'
+    }
+    return descriptions[incarnationCross.name as keyof typeof descriptions] || incarnationCross.description
+  }
+
+  const getDefinitionDescription = (definition: string) => {
+    const descriptions = {
+      ru: {
+        'Single Definition': 'Единое определение означает, что все ваши определенные центры соединены между собой. Это дает вам последовательность и стабильность в принятии решений.',
+        'Split Definition': 'Разделенное определение означает, что ваши определенные центры разделены на две группы. Это создает внутреннее напряжение и потребность в других людях для завершения.',
+        'Triple Split Definition': 'Тройное разделенное определение означает, что ваши определенные центры разделены на три группы. Это создает сложную внутреннюю динамику и потребность в разнообразных связях.',
+        'Quadruple Split Definition': 'Четверное разделенное определение означает, что ваши определенные центры разделены на четыре группы. Это создает очень сложную внутреннюю динамику.',
+        'No Definition': 'Без определения означает, что у вас нет определенных центров. Вы являетесь чистым рефлектором.'
+      },
+      en: {
+        'Single Definition': 'Single definition means all your defined centers are connected. This gives you consistency and stability in decision making.',
+        'Split Definition': 'Split definition means your defined centers are divided into two groups. This creates inner tension and need for others to complete.',
+        'Triple Split Definition': 'Triple split definition means your defined centers are divided into three groups. This creates complex inner dynamics.',
+        'Quadruple Split Definition': 'Quadruple split definition means your defined centers are divided into four groups. This creates very complex inner dynamics.',
+        'No Definition': 'No definition means you have no defined centers. You are a pure reflector.'
+      }
+    }
+    return descriptions[language][definition as keyof typeof descriptions[typeof language]] || definition
+  }
+
+  const handleDownloadPDF = async () => {
+    if (!humanDesignData) return
+
+    setIsGeneratingPDF(true)
+    try {
+      const blob = await PDFGenerator.generateHumanDesignPDF(userProfile, humanDesignData)
+      
+      // Создаем ссылку для скачивания
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `human-design-${userProfile.name || 'report'}-${new Date().toISOString().split('T')[0]}.html`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Ошибка при генерации PDF:', error)
+      alert('Произошла ошибка при генерации PDF. Попробуйте еще раз.')
+    } finally {
+      setIsGeneratingPDF(false)
+    }
+  }
+
+  const getAuthorityDescription = (authority: string) => {
+    const descriptions = {
+      ru: {
+        'Sacral': 'Сакральный авторитет - это ваша внутренняя мудрость, которая знает, что правильно для вас через звуки и ощущения.',
+        'Solar Plexus': 'Авторитет солнечного сплетения - это эмоциональная мудрость, которая требует времени для принятия решений.',
+        'Spleen': 'Спленный авторитет - это интуитивная мудрость, которая работает мгновенно для вашего выживания.',
+        'Heart': 'Сердечный авторитет - это мудрость эго, которая знает ваше истинное направление.',
+        'G-Center': 'G-Центр авторитет - это мудрость направления, которая знает, где вам быть.',
+        'Root': 'Корневой авторитет - это мудрость давления, которая знает, когда действовать.',
+        'Throat': 'Горловой авторитет - это мудрость самовыражения, которая знает, что сказать.',
+        'Ajna': 'Аджана авторитет - это мудрость ума, которая анализирует и понимает.',
+        'Head': 'Головной авторитет - это мудрость вдохновения, которая получает идеи.',
+        'Lunar': 'Лунный авторитет - это мудрость лунного цикла, которая требует 28 дней для принятия решений.',
+        'Environmental': 'Авторитет окружающей среды - это мудрость окружения, которая реагирует на среду.',
+        'Ego': 'Эго авторитет - это мудрость воли, которая знает вашу силу.',
+        'Self': 'Я авторитет - это мудрость направления, которая знает ваш путь.'
+      },
+      en: {
+        'Sacral': 'Sacral authority is your inner wisdom that knows what is right for you through sounds and feelings.',
+        'Solar Plexus': 'Solar plexus authority is emotional wisdom that requires time to make decisions.',
+        'Spleen': 'Spleen authority is intuitive wisdom that works instantly for your survival.',
+        'Heart': 'Heart authority is ego wisdom that knows your true direction.',
+        'G-Center': 'G-Center authority is direction wisdom that knows where you should be.',
+        'Root': 'Root authority is pressure wisdom that knows when to act.',
+        'Throat': 'Throat authority is expression wisdom that knows what to say.',
+        'Ajna': 'Ajna authority is mind wisdom that analyzes and understands.',
+        'Head': 'Head authority is inspiration wisdom that receives ideas.',
+        'Lunar': 'Lunar authority is lunar cycle wisdom that requires 28 days to make decisions.',
+        'Environmental': 'Environmental authority is environment wisdom that responds to surroundings.',
+        'Ego': 'Ego authority is will wisdom that knows your power.',
+        'Self': 'Self authority is direction wisdom that knows your path.'
+      }
+    }
+    return descriptions[language][authority as keyof typeof descriptions[typeof language]] || authority
   }
 
   const getCenterNameRu = (centerName: string) => {
@@ -170,45 +408,6 @@ export function HumanDesignDisplay({ userProfile, language }: HumanDesignDisplay
     return centerTranslations[centerName as keyof typeof centerTranslations] || centerName
   }
 
-  const getStrategyNameRu = (strategyName: string) => {
-    const strategyTranslations = {
-      'Respond': 'Отвечать',
-      'Initiate': 'Инициировать',
-      'Wait for the Invitation': 'Ждать приглашения',
-      'Wait for the Lunar Cycle': 'Ждать лунный цикл',
-      'Respond, then Inform': 'Отвечать, затем информировать'
-    }
-    return strategyTranslations[strategyName as keyof typeof strategyTranslations] || strategyName
-  }
-
-  const getAuthorityNameRu = (authorityName: string) => {
-    const authorityTranslations = {
-      'Emotional': 'Эмоциональный',
-      'Sacral': 'Сакральный',
-      'Splenic': 'Спленальный',
-      'Ego': 'Эго',
-      'Self-Projected': 'Само-проектируемый',
-      'Environmental': 'Окружающий',
-      'Lunar': 'Лунный'
-    }
-    return authorityTranslations[authorityName as keyof typeof authorityTranslations] || authorityName
-  }
-
-  const getDefinitionNameRu = (definitionName: string) => {
-    // Парсим определение типа "Reflector with Environmental authority"
-    const parts = definitionName.split(' with ')
-    if (parts.length === 2) {
-      const type = parts[0]
-      const authority = parts[1].replace(' authority', '')
-      
-      const typeRu = getTypeNameRu(type)
-      const authorityRu = getAuthorityNameRu(authority)
-      
-      return `${typeRu} с ${authorityRu} авторитетом`
-    }
-    return definitionName
-  }
-
   const getTypeNameRu = (typeName: string) => {
     const typeTranslations = {
       'Generator': 'Генератор',
@@ -220,20 +419,10 @@ export function HumanDesignDisplay({ userProfile, language }: HumanDesignDisplay
     return typeTranslations[typeName as keyof typeof typeTranslations] || typeName
   }
 
-  const getIncarnationCrossNameRu = (crossName: string) => {
-    const crossTranslations = {
-      'Right Angle Cross of the Sphinx': 'Правый Угловой Крест Сфинкса',
-      'Left Angle Cross of the Sphinx': 'Левый Угловой Крест Сфинкса',
-      'Juxtaposition Cross of the Sphinx': 'Крест Противопоставления Сфинкса',
-      'Right Angle Cross of the Vessel': 'Правый Угловой Крест Сосуда',
-      'Left Angle Cross of the Vessel': 'Левый Угловой Крест Сосуда',
-      'Juxtaposition Cross of the Vessel': 'Крест Противопоставления Сосуда',
-      'Right Angle Cross of the Sleeping Phoenix': 'Правый Угловой Крест Спящего Феникса',
-      'Left Angle Cross of the Sleeping Phoenix': 'Левый Угловой Крест Спящего Феникса',
-      'Juxtaposition Cross of the Sleeping Phoenix': 'Крест Противопоставления Спящего Феникса'
-    }
-    return crossTranslations[crossName as keyof typeof crossTranslations] || crossName
-  }
+
+
+
+
 
   if (isLoading) {
     return (
@@ -301,6 +490,21 @@ export function HumanDesignDisplay({ userProfile, language }: HumanDesignDisplay
 
   return (
     <div className="space-y-6">
+      {/* PDF Button */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={handleDownloadPDF}
+          disabled={isGeneratingPDF || !humanDesignData}
+          className="flex items-center gap-2 px-4 py-2 bg-cosmic-600 hover:bg-cosmic-700 disabled:bg-space-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          {isGeneratingPDF 
+            ? (language === 'ru' ? 'Генерация...' : 'Generating...')
+            : (language === 'ru' ? 'Скачать PDF' : 'Download PDF')
+          }
+        </button>
+      </div>
+
       {/* Статус API */}
       {/* HumanDesignApiStatus removed */}
 
@@ -380,7 +584,7 @@ export function HumanDesignDisplay({ userProfile, language }: HumanDesignDisplay
             {language === 'ru' ? getAuthorityNameRu(humanDesignData.authority) : humanDesignData.authority}
           </div>
           <p className="text-sm text-cosmic-300">
-            {language === 'ru' ? 'Ваш внутренний авторитет' : 'Your inner authority'}
+            {getAuthorityDescription(humanDesignData.authority)}
           </p>
         </motion.div>
       </div>
@@ -429,7 +633,7 @@ export function HumanDesignDisplay({ userProfile, language }: HumanDesignDisplay
             {language === 'ru' ? getDefinitionNameRu(humanDesignData.definition) : humanDesignData.definition}
           </div>
           <p className="text-sm text-cosmic-300">
-            {language === 'ru' ? 'Тип вашего определения' : 'Type of your definition'}
+            {getDefinitionDescription(humanDesignData.definition)}
           </p>
         </motion.div>
       </div>
@@ -451,10 +655,20 @@ export function HumanDesignDisplay({ userProfile, language }: HumanDesignDisplay
           {language === 'ru' ? 'Инкарнационный крест' : 'Incarnation Cross'}
         </h3>
         <div className="text-lg font-bold text-cosmic-400 mb-2">
-          {language === 'ru' ? getIncarnationCrossNameRu(humanDesignData.incarnationCross) : humanDesignData.incarnationCross}
+          {language === 'ru' 
+            ? getIncarnationCrossNameRu(humanDesignData.incarnationCross) 
+            : (typeof humanDesignData.incarnationCross === 'string' 
+                ? humanDesignData.incarnationCross 
+                : (humanDesignData.incarnationCross as any).name)
+          }
         </div>
         <p className="text-sm text-cosmic-300">
-          {language === 'ru' ? 'Ваша жизненная миссия' : 'Your life mission'}
+          {language === 'ru' 
+            ? getIncarnationCrossDescriptionRu(humanDesignData.incarnationCross) 
+            : (typeof humanDesignData.incarnationCross === 'string' 
+                ? 'Описание инкарнационного креста' 
+                : (humanDesignData.incarnationCross as any).description)
+          }
         </p>
       </motion.div>
 
@@ -514,30 +728,127 @@ export function HumanDesignDisplay({ userProfile, language }: HumanDesignDisplay
           {language === 'ru' ? 'Центры' : 'Centers'}
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h4 className="text-cosmic-300 font-medium mb-2">
-              {language === 'ru' ? 'Определенные' : 'Defined'}
-            </h4>
-            <div className="space-y-1">
-              {humanDesignData.centers.defined.map((center, index) => (
-                <div key={index} className="text-sm text-cosmic-400 bg-green-900/20 px-2 py-1 rounded">
-                  {language === 'ru' ? getCenterNameRu(center) : center}
-                </div>
-              ))}
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-cosmic-300 font-medium mb-2">
+                {language === 'ru' ? 'Определенные' : 'Defined'}
+              </h4>
+              <div className="space-y-1">
+                {humanDesignData.centers.defined.map((center, index) => (
+                  <div key={index} className="text-sm text-cosmic-400 bg-green-900/20 px-2 py-1 rounded">
+                    {language === 'ru' ? getCenterNameRu(center) : center}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-cosmic-300 font-medium mb-2">
+                {language === 'ru' ? 'Неопределенные' : 'Undefined'}
+              </h4>
+              <div className="space-y-1">
+                {humanDesignData.centers.undefined.map((center, index) => (
+                  <div key={index} className="text-sm text-cosmic-400 bg-blue-900/20 px-2 py-1 rounded">
+                    {language === 'ru' ? getCenterNameRu(center) : center}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          
-          <div>
-            <h4 className="text-cosmic-300 font-medium mb-2">
-              {language === 'ru' ? 'Неопределенные' : 'Undefined'}
+
+          {/* Подробное описание центров */}
+          <div className="mt-6">
+            <h4 className="text-cosmic-300 font-medium mb-4">
+              {language === 'ru' ? 'Описание центров' : 'Centers Description'}
             </h4>
-            <div className="space-y-1">
-              {humanDesignData.centers.undefined.map((center, index) => (
-                <div key={index} className="text-sm text-cosmic-400 bg-blue-900/20 px-2 py-1 rounded">
-                  {language === 'ru' ? getCenterNameRu(center) : center}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="bg-space-800/50 p-3 rounded-lg">
+                  <h5 className="text-cosmic-400 font-medium mb-1">G-центр (Идентичность)</h5>
+                  <p className="text-sm text-cosmic-500">
+                    {language === 'ru' 
+                      ? 'Определяет направление и любовь. Отвечает за самоидентификацию и жизненный путь.'
+                      : 'Defines direction and love. Responsible for self-identity and life path.'
+                    }
+                  </p>
                 </div>
-              ))}
+                <div className="bg-space-800/50 p-3 rounded-lg">
+                  <h5 className="text-cosmic-400 font-medium mb-1">S-центр (Сакральный)</h5>
+                  <p className="text-sm text-cosmic-500">
+                    {language === 'ru' 
+                      ? 'Источник жизненной силы и творческой энергии. Отвечает за сексуальность и воспроизводство.'
+                      : 'Source of life force and creative energy. Responsible for sexuality and reproduction.'
+                    }
+                  </p>
+                </div>
+                <div className="bg-space-800/50 p-3 rounded-lg">
+                  <h5 className="text-cosmic-400 font-medium mb-1">T-центр (Теменная)</h5>
+                  <p className="text-sm text-cosmic-500">
+                    {language === 'ru' 
+                      ? 'Центр вдохновения и ментального давления. Связан с духовностью и абстрактным мышлением.'
+                      : 'Center of inspiration and mental pressure. Connected to spirituality and abstract thinking.'
+                    }
+                  </p>
+                </div>
+                <div className="bg-space-800/50 p-3 rounded-lg">
+                  <h5 className="text-cosmic-400 font-medium mb-1">H-центр (Сердечная)</h5>
+                  <p className="text-sm text-cosmic-500">
+                    {language === 'ru' 
+                      ? 'Центр силы воли и эго. Отвечает за амбиции, достижения и материальный успех.'
+                      : 'Center of willpower and ego. Responsible for ambitions, achievements and material success.'
+                    }
+                  </p>
+                </div>
+                <div className="bg-space-800/50 p-3 rounded-lg">
+                  <h5 className="text-cosmic-400 font-medium mb-1">E-центр (Эмоциональная)</h5>
+                  <p className="text-sm text-cosmic-500">
+                    {language === 'ru' 
+                      ? 'Центр эмоциональной системы. Отвечает за чувства, страсти и эмоциональные волны.'
+                      : 'Center of emotional system. Responsible for feelings, passions and emotional waves.'
+                    }
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="bg-space-800/50 p-3 rounded-lg">
+                  <h5 className="text-cosmic-400 font-medium mb-1">A-центр (Адреналовая)</h5>
+                  <p className="text-sm text-cosmic-500">
+                    {language === 'ru' 
+                      ? 'Центр двигательной системы. Отвечает за физическую активность и действие.'
+                      : 'Center of motor system. Responsible for physical activity and action.'
+                    }
+                  </p>
+                </div>
+                <div className="bg-space-800/50 p-3 rounded-lg">
+                  <h5 className="text-cosmic-400 font-medium mb-1">P-центр (Селезеночная)</h5>
+                  <p className="text-sm text-cosmic-500">
+                    {language === 'ru' 
+                      ? 'Центр инстинктивного осознания. Отвечает за интуицию, здоровье и страх.'
+                      : 'Center of instinctive awareness. Responsible for intuition, health and fear.'
+                    }
+                  </p>
+                </div>
+                <div className="bg-space-800/50 p-3 rounded-lg">
+                  <h5 className="text-cosmic-400 font-medium mb-1">L-центр (Лимбическая)</h5>
+                  <p className="text-sm text-cosmic-500">
+                    {language === 'ru' 
+                      ? 'Центр логического осознания. Отвечает за анализ, понимание и логику.'
+                      : 'Center of logical awareness. Responsible for analysis, understanding and logic.'
+                    }
+                  </p>
+                </div>
+                <div className="bg-space-800/50 p-3 rounded-lg">
+                  <h5 className="text-cosmic-400 font-medium mb-1">R-центр (Корневая)</h5>
+                  <p className="text-sm text-cosmic-500">
+                    {language === 'ru' 
+                      ? 'Центр давления и стресса. Отвечает за выживание, адреналин и трансформацию.'
+                      : 'Center of pressure and stress. Responsible for survival, adrenaline and transformation.'
+                    }
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

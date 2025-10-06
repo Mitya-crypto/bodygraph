@@ -5,7 +5,7 @@ import { useAppStore } from '@/store/appStore'
 import { ArrowLeft, Crown, Star, Zap } from 'lucide-react'
 
 export function SubscriptionScreen() {
-  const { setCurrentScreen, language } = useAppStore()
+  const { language } = useAppStore()
 
   const features = [
     {
@@ -135,7 +135,7 @@ export function SubscriptionScreen() {
 
         {/* Back Button */}
         <motion.button
-          onClick={() => setCurrentScreen('modules')}
+          onClick={() => window.location.href = '/modules'}
           className="cosmic-button bg-space-700 hover:bg-space-600 flex items-center justify-center gap-2 mx-auto"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
