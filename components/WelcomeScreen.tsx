@@ -14,6 +14,7 @@ import { calculateHumanDesign } from '@/lib/humanDesignCalculator'
 
 export function WelcomeScreen() {
   const router = useRouter()
+  const { userProfile, profileUpdateTrigger } = useAppStore()
   const [userData, setUserData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   
@@ -22,27 +23,35 @@ export function WelcomeScreen() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        // Получаем профили пользователя
-        let telegramId = 123456789 // Fallback для тестирования
+        // Используем профиль из store или получаем из профилей пользователя
+        let profile = userProfile
         
-        if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initDataUnsafe?.user) {
-          telegramId = (window as any).Telegram.WebApp.initDataUnsafe.user.id
+        if (!profile) {
+          // Получаем профили пользователя как fallback
+          let telegramId = 123456789 // Fallback для тестирования
+          
+          if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initDataUnsafe?.user) {
+            telegramId = (window as any).Telegram.WebApp.initDataUnsafe.user.id
+          }
+          
+          const profiles = profileManager.getUserProfiles(telegramId)
+          
+          if (profiles.length > 0) {
+            profile = profiles[0].profile // Берем первый профиль
+          }
         }
         
-        const profiles = profileManager.getUserProfiles(telegramId)
-        
-        if (profiles.length > 0) {
-          const profile = profiles[0] // Берем первый профиль
+        if (profile) {
           
           // Рассчитываем нумерологию
           const numerologyData = calculateNumerology(
-            profile.profile.name,
-            profile.profile.birthDate
+            profile.name,
+            profile.birthDate
           )
           
           // Рассчитываем Human Design
-          const birthDate = new Date(profile.profile.birthDate)
-          const birthTime = new Date(`1970-01-01T${profile.profile.birthTime}`)
+          const birthDate = new Date(profile.birthDate)
+          const birthTime = new Date(`1970-01-01T${profile.birthTime}`)
           
           const humanDesignData = calculateHumanDesign({
             year: birthDate.getFullYear(),
@@ -50,15 +59,15 @@ export function WelcomeScreen() {
             day: birthDate.getDate(),
             hour: birthTime.getHours(),
             minute: birthTime.getMinutes(),
-            latitude: profile.profile.coordinates?.lat || 55.7558,
-            longitude: profile.profile.coordinates?.lng || 37.6176
+            latitude: profile.coordinates?.lat || 55.7558,
+            longitude: profile.coordinates?.lng || 37.6176
           })
           
           // Получаем астрологические данные (упрощенно)
           const astrologyData = {
-            sunSign: getSunSign(new Date(profile.profile.birthDate)),
-            moonSign: getMoonSign(new Date(profile.profile.birthDate)),
-            risingSign: getRisingSign(new Date(profile.profile.birthDate), profile.profile.coordinates?.lat || 55.7558)
+            sunSign: getSunSign(new Date(profile.birthDate)),
+            moonSign: getMoonSign(new Date(profile.birthDate)),
+            risingSign: getRisingSign(new Date(profile.birthDate), profile.coordinates?.lat || 55.7558)
           }
           
           setUserData({
@@ -88,7 +97,7 @@ export function WelcomeScreen() {
     }
     
     loadUserData()
-  }, [])
+  }, [userProfile, profileUpdateTrigger])
 
   // Вспомогательные функции для определения знаков зодиака
   const getSunSign = (birthDate: Date) => {

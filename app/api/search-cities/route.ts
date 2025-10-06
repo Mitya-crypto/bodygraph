@@ -7,14 +7,24 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const query = searchParams.get('q')
+    const queryParam = searchParams.get('q')
     const limit = parseInt(searchParams.get('limit') || '8')
 
-    if (!query || query.length < 2) {
+    if (!queryParam || queryParam.length < 2) {
       return NextResponse.json({ places: [] })
     }
 
-    console.log(`🔍 API: Searching for "${query}"`)
+    // Fix encoding issues for Cyrillic text
+    let query = queryParam
+    try {
+      // Try to decode the query if it's URL encoded
+      query = decodeURIComponent(queryParam)
+    } catch (e) {
+      // If decoding fails, use original query
+      query = queryParam
+    }
+
+    console.log(`🔍 API: Searching for "${query}" (original: "${queryParam}")`)
 
     // Import search function dynamically
     const { searchCitiesHybrid } = await import('@/lib/hybridGeocodingApi')

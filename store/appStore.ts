@@ -138,6 +138,10 @@ interface AppState {
   userProfile: UserProfile | null
   setUserProfile: (profile: UserProfile) => void
   
+  // Profile update trigger
+  profileUpdateTrigger: number
+  triggerProfileUpdate: () => void
+  
   // Subscription
   subscriptionStatus: 'free' | 'premium' | 'expired'
   subscriptionExpiry: number | null
@@ -192,6 +196,13 @@ export const useAppStore = create<AppState>()(
           birthCoordinates: profile?.birthCoordinates
         })
         set({ userProfile: profile })
+      },
+      
+      // Profile update trigger
+      profileUpdateTrigger: 0,
+      triggerProfileUpdate: () => {
+        console.log('🔄 Triggering profile update for all components')
+        set((state) => ({ profileUpdateTrigger: state.profileUpdateTrigger + 1 }))
       },
       
       // Subscription - теперь все пользователи Premium по умолчанию

@@ -30,45 +30,19 @@ export async function searchCitiesHybrid(query: string, limit: number = 10): Pro
   const trimmedQuery = query.trim()
   
   try {
-    // Always use both APIs for maximum accuracy and coverage
-    console.log(`🔄 Searching with both Nominatim and MapBox APIs for: "${trimmedQuery}"`)
+    // Simple approach: try Nominatim only for debugging
+    console.log(`🔄 Searching with Nominatim API only for: "${trimmedQuery}"`)
     
-    const [nominatimResults, mapboxResults] = await Promise.allSettled([
-      searchCitiesNominatim(trimmedQuery, limit),
-      searchCitiesMapBox(trimmedQuery, limit)
-    ])
+    const nominatimResults = await searchCitiesNominatim(trimmedQuery, limit)
+    console.log(`✅ Nominatim returned ${nominatimResults.length} results`)
     
-    const allResults: Place[] = []
-    
-    // Collect results from Nominatim
-    if (nominatimResults.status === 'fulfilled') {
-      console.log(`✅ Nominatim returned ${nominatimResults.value.length} results`)
-      allResults.push(...nominatimResults.value)
-    } else {
-      console.warn(`⚠️ Nominatim failed:`, nominatimResults.reason)
-    }
-    
-    // Collect results from MapBox
-    if (mapboxResults.status === 'fulfilled') {
-      console.log(`✅ MapBox returned ${mapboxResults.value.length} results`)
-      allResults.push(...mapboxResults.value)
-    } else {
-      console.warn(`⚠️ MapBox failed:`, mapboxResults.reason)
-    }
-    
-    if (allResults.length === 0) {
-      console.log(`❌ No results from any API for: "${trimmedQuery}"`)
+    if (nominatimResults.length === 0) {
+      console.log(`❌ No results from Nominatim for: "${trimmedQuery}"`)
       return []
     }
     
-    // Remove duplicates based on coordinates proximity
-    const uniqueResults = removeDuplicates(allResults)
-    
-    // Sort by relevance and query language preference
-    const sortedResults = sortByRelevanceAndSource(uniqueResults, trimmedQuery)
-    
-    console.log(`🎯 Returning ${Math.min(sortedResults.length, limit)} combined results`)
-    return sortedResults.slice(0, limit)
+    // Return Nominatim results directly
+    return nominatimResults
     
     } catch (error) {
     console.error('❌ Hybrid geocoding error:', error)
@@ -103,6 +77,7 @@ function removeDuplicates(places: Place[]): Place[] {
 function sortByRelevanceAndSource(places: Place[], query: string): Place[] {
   const queryLower = query.toLowerCase()
   const hasRussianChars = /[а-яё]/i.test(query)
+  const hasLatinChars = /[a-z]/i.test(query)
   
   return places.sort((a, b) => {
     const aName = a.name.toLowerCase()
@@ -120,12 +95,22 @@ function sortByRelevanceAndSource(places: Place[], query: string): Place[] {
     let bScore = getRelevanceScore(bName)
     
     // Boost score based on source preference for query language
-    if (hasRussianChars) {
-      // For Russian queries, prefer Nominatim results
+    if (hasRussianChars && !hasLatinChars) {
+      // For pure Russian queries, heavily prefer Nominatim results
+      if (a.id.startsWith('nominatim-')) aScore += 200
+      if (b.id.startsWith('nominatim-')) bScore += 200
+      if (a.id.startsWith('mapbox-')) aScore -= 50
+      if (b.id.startsWith('mapbox-')) bScore -= 50
+    } else if (!hasRussianChars && hasLatinChars) {
+      // For pure Latin queries, prefer MapBox results
+      if (a.id.startsWith('mapbox-')) aScore += 200
+      if (b.id.startsWith('mapbox-')) bScore += 200
+      if (a.id.startsWith('nominatim-')) aScore -= 50
+      if (b.id.startsWith('nominatim-')) bScore -= 50
+    } else {
+      // Mixed or neutral queries
       if (a.id.startsWith('nominatim-')) aScore += 100
       if (b.id.startsWith('nominatim-')) bScore += 100
-    } else {
-      // For Latin queries, prefer MapBox results
       if (a.id.startsWith('mapbox-')) aScore += 100
       if (b.id.startsWith('mapbox-')) bScore += 100
     }

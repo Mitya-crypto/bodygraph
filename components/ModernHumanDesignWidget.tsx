@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Brain, Target, Zap, Moon, Activity, Heart, Shield, Star } from 'lucide-react'
+import { useAppStore } from '@/store/appStore'
 
 interface ModernHumanDesignWidgetProps {
   type: string
@@ -35,6 +36,7 @@ const ModernHumanDesignWidget: React.FC<ModernHumanDesignWidgetProps> = ({
   definition,
   language = 'ru'
 }) => {
+  const { profileUpdateTrigger } = useAppStore()
   const [metrics, setMetrics] = useState<HumanDesignMetrics | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -119,7 +121,7 @@ const ModernHumanDesignWidget: React.FC<ModernHumanDesignWidgetProps> = ({
 
   useEffect(() => {
     setMetrics(generateMetrics())
-  }, [type, strategy, authority, profile])
+  }, [type, strategy, authority, profile, profileUpdateTrigger])
 
   if (!metrics) {
     return (

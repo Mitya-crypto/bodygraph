@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Calendar, Clock, Palette, TrendingUp, Star, Zap, Sparkles, Activity, Target } from 'lucide-react'
+import { useAppStore } from '@/store/appStore'
 
 interface ModernNumerologyWidgetProps {
   lifePathNumber: number
@@ -33,6 +34,7 @@ const ModernNumerologyWidget: React.FC<ModernNumerologyWidgetProps> = ({
   personalityNumber,
   language = 'ru'
 }) => {
+  const { profileUpdateTrigger } = useAppStore()
   const [metrics, setMetrics] = useState<DailyMetrics | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -112,7 +114,7 @@ const ModernNumerologyWidget: React.FC<ModernNumerologyWidgetProps> = ({
 
   useEffect(() => {
     setMetrics(generateMetrics())
-  }, [lifePathNumber, expressionNumber, soulUrgeNumber, personalityNumber])
+  }, [lifePathNumber, expressionNumber, soulUrgeNumber, personalityNumber, profileUpdateTrigger])
 
   if (!metrics) {
     return (

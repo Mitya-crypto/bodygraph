@@ -92,13 +92,14 @@ export async function searchCitiesMapBox(query: string, limit: number = 10): Pro
     
     const encodedQuery = encodeURIComponent(query)
     
-    // Use MapBox Geocoding API v6
+    // Use MapBox Geocoding API v6 with strict language filtering
     const url = `https://api.mapbox.com/search/geocode/v6/forward?` +
       `q=${encodedQuery}&` +
       `access_token=${accessToken}&` +
-      `limit=${limit}&` +
+      `limit=${limit * 2}&` + // Get more results to filter better
       `types=place&` + // Only places (cities, towns, villages)
-      `language=ru,en&` +
+      `language=en&` + // Force English only to avoid Persian/Arabic results
+      `country=RU,US,GB,DE,FR,IT,ES,CN,JP,KR,IN,BR,CA,AU&` + // Limit to major countries
       `autocomplete=true`
 
     const response = await fetch(url, {
@@ -123,9 +124,35 @@ export async function searchCitiesMapBox(query: string, limit: number = 10): Pro
     const places: Place[] = data.features
       .filter(feature => {
         // Filter for places only
-        return feature.properties.feature_type === 'place' && 
-               feature.geometry?.coordinates &&
-               feature.properties.coordinates
+        const isValidPlace = feature.properties.feature_type === 'place' && 
+                            feature.geometry?.coordinates &&
+                            feature.properties.coordinates
+        
+        if (!isValidPlace) return false
+        
+        // Additional filtering to avoid Persian/Arabic results
+        const name = feature.properties.name
+        const hasPersianChars = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(name)
+        const hasArabicChars = /[\u0600-\u06FF]/.test(name)
+        
+        // Skip results with Persian/Arabic characters
+        if (hasPersianChars || hasArabicChars) return false
+        
+        // Skip results that don't make sense for the query
+        const queryLower = query.toLowerCase()
+        const nameLower = name.toLowerCase()
+        
+        // If query is in Cyrillic, prefer results that contain similar characters
+        if (/[а-яё]/i.test(query)) {
+          // Skip results that are completely in Latin when query is in Cyrillic
+          if (!/[а-яё]/i.test(name)) {
+            // Only keep if it's a well-known international city
+            const knownCities = ['москва', 'санкт-петербург', 'новосибирск', 'екатеринбург', 'нижний новгород']
+            if (!knownCities.some(city => nameLower.includes(city))) return false
+          }
+        }
+        
+        return true
       })
       .map(feature => {
         // Extract country and state from context

@@ -10,7 +10,7 @@ import { profileManager } from '@/lib/profileManager'
 import { useAppStore } from '@/store/appStore'
 
 export function ProfileManagementScreen() {
-  const { setUserProfile, language } = useAppStore()
+  const { setUserProfile, triggerProfileUpdate, language } = useAppStore()
   const [telegramId, setTelegramId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<'profiles' | 'subscription'>('profiles')
   const [subscription, setSubscription] = useState<any>(null)
@@ -54,7 +54,8 @@ export function ProfileManagementScreen() {
       birthCoordinates: profile.profile?.birthCoordinates
     })
     setUserProfile(profile.profile) // Устанавливаем данные профиля
-    console.log('🎯 UserProfile set in store:', profile.profile)
+    triggerProfileUpdate() // Триггерим обновление всех компонентов
+    console.log('🎯 UserProfile set in store and update triggered:', profile.profile)
     window.location.href = '/modules'
   }
 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Star, Moon, Sun, Zap, Activity, Target, TrendingUp, Shield } from 'lucide-react'
+import { useAppStore } from '@/store/appStore'
 
 interface ModernAstrologyWidgetProps {
   sunSign: string
@@ -39,6 +40,7 @@ const ModernAstrologyWidget: React.FC<ModernAstrologyWidgetProps> = ({
   risingSign,
   language = 'ru'
 }) => {
+  const { profileUpdateTrigger } = useAppStore()
   const [metrics, setMetrics] = useState<AstrologyMetrics | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -144,7 +146,7 @@ const ModernAstrologyWidget: React.FC<ModernAstrologyWidgetProps> = ({
 
   useEffect(() => {
     setMetrics(generateMetrics())
-  }, [sunSign, moonSign, risingSign])
+  }, [sunSign, moonSign, risingSign, profileUpdateTrigger])
 
   if (!metrics) {
     return (
