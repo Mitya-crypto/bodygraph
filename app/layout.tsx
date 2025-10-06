@@ -51,7 +51,7 @@ export default function RootLayout({
       <body className={`${inter.className} cosmic-scrollbar`}>
         <NoSSR>
           <TelegramWebApp>
-            <TelegramProvider>
+        <TelegramProvider>
               <NoSSR>
                 <div
                   id="starfield-container"
@@ -430,20 +430,20 @@ export default function RootLayout({
                   }}
                 />
               </NoSSR>
-              <div className="relative z-10">
-                {children}
-              </div>
-              <Toaster 
-                position="top-center"
-                toastOptions={{
-                  style: {
-                    background: '#1e293b',
-                    color: '#f1f5f9',
-                    border: '1px solid #334155',
-                  },
-                }}
-              />
-            </TelegramProvider>
+          <div className="relative z-10">
+            {children}
+          </div>
+          <Toaster 
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: '#1e293b',
+                color: '#f1f5f9',
+                border: '1px solid #334155',
+              },
+            }}
+          />
+        </TelegramProvider>
           </TelegramWebApp>
         </NoSSR>
       </body>
