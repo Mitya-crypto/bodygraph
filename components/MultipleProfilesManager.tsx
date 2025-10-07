@@ -62,7 +62,7 @@ export function MultipleProfilesManager() {
   // Фильтруем профили в зависимости от контекста
   const displayProfiles = fromSynastry 
     ? savedProfiles.filter(profile => !profile.isPrimary) // Для синастрии показываем только дополнительные профили
-    : savedProfiles.filter(profile => profile.isPrimary) // Для обычного управления показываем только основной профиль
+    : savedProfiles // Для обычного управления показываем все профили (семья)
   const [formData, setFormData] = useState<ProfileFormData>({
     name: '',
     birthDate: '',
@@ -89,7 +89,7 @@ export function MultipleProfilesManager() {
   }, [addSavedProfile, savedProfiles.length])
 
   const handleAddProfile = () => {
-    // Создаем новый профиль партнера для синастрии
+    // Создаем новый профиль
     setIsAddingProfile(true)
     setEditingProfileId(null)
     setFormData({
@@ -147,7 +147,7 @@ export function MultipleProfilesManager() {
         relationship: fromSynastry ? formData.relationship : 'self', // Для синастрии используем выбранное отношение
         notes: formData.notes,
         language: 'ru',
-        isPrimary: fromSynastry ? false : (editingProfileId ? undefined : savedProfiles.length === 0), // Для синастрии всегда дополнительные
+        isPrimary: fromSynastry ? false : (editingProfileId ? savedProfiles.find(p => p.id === editingProfileId)?.isPrimary : false), // Для синастрии всегда дополнительные, для семьи - дополнительные
         createdAt: editingProfileId ? savedProfiles.find(p => p.id === editingProfileId)?.createdAt : new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
@@ -201,28 +201,26 @@ export function MultipleProfilesManager() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-cosmic-300 mb-2">
-            {fromSynastry ? 'Выберите партнера' : 'Мой Профиль'}
+            {fromSynastry ? 'Выберите партнера' : 'Мои Профили'}
           </h1>
           <p className="text-cosmic-400">
             {fromSynastry 
-              ? 'Выберите партнера для анализа совместимости' 
-              : 'Управление основным профилем для всех расчетов'
+              ? 'Выберите партнера для анализа совместимости'
+              : 'Управление профилями семьи и близких'
             }
           </p>
         </div>
 
-        {/* Add Profile Button - только для синастрии */}
-        {fromSynastry && (
-          <motion.button
-            onClick={handleAddProfile}
-            className="w-full mb-6 p-4 bg-cosmic-600 hover:bg-cosmic-700 rounded-xl text-white font-medium transition-colors flex items-center justify-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Plus className="w-5 h-5" />
-            Добавить партнера
-          </motion.button>
-        )}
+        {/* Add Profile Button */}
+        <motion.button
+          onClick={handleAddProfile}
+          className="w-full mb-6 p-4 bg-cosmic-600 hover:bg-cosmic-700 rounded-xl text-white font-medium transition-colors flex items-center justify-center gap-2"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Plus className="w-5 h-5" />
+          {fromSynastry ? 'Добавить партнера' : 'Добавить профиль'}
+        </motion.button>
 
         {/* Profile Form */}
         <AnimatePresence>
@@ -489,23 +487,21 @@ export function MultipleProfilesManager() {
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-cosmic-600 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-cosmic-300 mb-2">
-              {fromSynastry ? 'Нет партнеров для анализа' : 'Нет основного профиля'}
+              {fromSynastry ? 'Нет партнеров для анализа' : 'Нет сохраненных профилей'}
             </h3>
             <p className="text-cosmic-400 mb-6">
               {fromSynastry 
                 ? 'Добавьте партнеров для анализа совместимости'
-                : 'Основной профиль создается при регистрации'
+                : 'Добавьте профили семьи и близких для быстрого доступа'
               }
             </p>
-            {fromSynastry && (
-              <button
-                onClick={handleAddProfile}
-                className="px-6 py-3 bg-cosmic-600 hover:bg-cosmic-700 rounded-lg text-white font-medium transition-colors flex items-center gap-2 mx-auto"
-              >
-                <Plus className="w-4 h-4" />
-                Добавить партнера
-              </button>
-            )}
+            <button
+              onClick={handleAddProfile}
+              className="px-6 py-3 bg-cosmic-600 hover:bg-cosmic-700 rounded-lg text-white font-medium transition-colors flex items-center gap-2 mx-auto"
+            >
+              <Plus className="w-4 h-4" />
+              {fromSynastry ? 'Добавить партнера' : 'Добавить профиль'}
+            </button>
           </div>
         )}
       </div>
