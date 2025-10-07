@@ -8,6 +8,7 @@ import { calculateNumerology } from '@/lib/numerology'
 import { NumerologyDisplay } from './NumerologyDisplay'
 import { HumanDesignDisplay } from './HumanDesignDisplay'
 import { AstrologyDisplay } from './AstrologyDisplay'
+import { SynastryDisplay } from './SynastryDisplay'
 import { collectAllAssistantData, sendDataToAssistant } from '@/lib/assistantDataCollector'
 
 interface ResultsScreenProps {
@@ -37,6 +38,8 @@ export function ResultsScreen({ selectedModule: propSelectedModule }: ResultsScr
         return language === 'ru' ? 'Human Design' : 'Human Design'
       case 'astrology':
         return language === 'ru' ? 'Астрология' : 'Astrology'
+      case 'synastry':
+        return language === 'ru' ? 'Синастрия' : 'Synastry'
       default:
         return language === 'ru' ? 'Анализ' : 'Analysis'
     }
@@ -56,6 +59,10 @@ export function ResultsScreen({ selectedModule: propSelectedModule }: ResultsScr
         return language === 'ru' 
           ? 'Ваша натальная карта, планеты и транзиты' 
           : 'Your natal chart, planets and transits'
+      case 'synastry':
+        return language === 'ru' 
+          ? 'Анализ совместимости по натальным картам' 
+          : 'Compatibility analysis through natal charts'
       default:
         return language === 'ru' ? 'Результаты анализа' : 'Analysis results'
     }
@@ -311,6 +318,10 @@ export function ResultsScreen({ selectedModule: propSelectedModule }: ResultsScr
           
           {selectedModule === 'astrology' && userProfile && (
             <AstrologyDisplay userProfile={userProfile} language={language} />
+          )}
+          
+          {selectedModule === 'synastry' && (
+            <SynastryDisplay />
           )}
         </motion.div>
 

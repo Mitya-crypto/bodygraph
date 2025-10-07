@@ -61,7 +61,7 @@ export default function RootLayout({
                     left: 0,
                     width: '100%',
                     height: '100%',
-                    zIndex: 1,
+                    zIndex: 0,
                     pointerEvents: 'none',
                     background: 'transparent',
                     overflow: 'hidden'
@@ -404,14 +404,14 @@ export default function RootLayout({
                           transform: translateY(-10px) translateX(0px);
                           opacity: 0;
                         }
-                        5% {
+                        10% {
                           opacity: 1;
                         }
-                        95% {
+                        90% {
                           opacity: 1;
                         }
                         100% {
-                          transform: translateY(calc(100vh + 10px)) translateX(80px);
+                          transform: translateY(100vh) translateX(100px);
                           opacity: 0;
                         }
                       }

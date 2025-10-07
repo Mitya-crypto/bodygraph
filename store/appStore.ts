@@ -17,6 +17,9 @@ export interface UserProfile {
   telegramId?: number
   createdAt?: string
   updatedAt?: string
+  isPrimary?: boolean // Основной профиль пользователя
+  relationship?: string // Отношение к владельцу (сам, супруг, ребенок, друг и т.д.)
+  notes?: string // Дополнительные заметки
 }
 
 export interface NumerologyData {
@@ -138,6 +141,14 @@ interface AppState {
   userProfile: UserProfile | null
   setUserProfile: (profile: UserProfile) => void
   
+  // Multiple profiles management
+  savedProfiles: UserProfile[]
+  setSavedProfiles: (profiles: UserProfile[]) => void
+  addSavedProfile: (profile: UserProfile) => void
+  updateSavedProfile: (id: string, updates: Partial<UserProfile>) => void
+  deleteSavedProfile: (id: string) => void
+  getProfileById: (id: string) => UserProfile | undefined
+  
   // Profile update trigger
   profileUpdateTrigger: number
   triggerProfileUpdate: () => void
@@ -198,6 +209,52 @@ export const useAppStore = create<AppState>()(
         set({ userProfile: profile })
       },
       
+      // Multiple profiles management
+      savedProfiles: [],
+      setSavedProfiles: (profiles) => {
+        console.log('🏪 Setting saved profiles:', profiles.length)
+        set({ savedProfiles: profiles })
+      },
+      addSavedProfile: (profile) => {
+        const newProfile = {
+          ...profile,
+          id: profile.id || `profile_${Date.now()}`,
+          createdAt: profile.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+        set((state) => {
+          const existingIndex = state.savedProfiles.findIndex(p => p.id === newProfile.id)
+          let updatedProfiles
+          if (existingIndex >= 0) {
+            updatedProfiles = [...state.savedProfiles]
+            updatedProfiles[existingIndex] = newProfile
+          } else {
+            updatedProfiles = [...state.savedProfiles, newProfile]
+          }
+          console.log('🏪 Added/Updated saved profile:', newProfile.name)
+          return { savedProfiles: updatedProfiles }
+        })
+      },
+      updateSavedProfile: (id, updates) => {
+        set((state) => ({
+          savedProfiles: state.savedProfiles.map(profile =>
+            profile.id === id 
+              ? { ...profile, ...updates, updatedAt: new Date().toISOString() }
+              : profile
+          )
+        }))
+        console.log('🏪 Updated saved profile:', id)
+      },
+      deleteSavedProfile: (id) => {
+        set((state) => ({
+          savedProfiles: state.savedProfiles.filter(profile => profile.id !== id)
+        }))
+        console.log('🏪 Deleted saved profile:', id)
+      },
+      getProfileById: (id) => {
+        return get().savedProfiles.find(profile => profile.id === id)
+      },
+      
       // Profile update trigger
       profileUpdateTrigger: 0,
       triggerProfileUpdate: () => {
@@ -239,6 +296,7 @@ export const useAppStore = create<AppState>()(
       name: 'cosmic-bodygraph-storage',
       partialize: (state) => ({
         userProfile: state.userProfile,
+        savedProfiles: state.savedProfiles,
         subscriptionStatus: state.subscriptionStatus,
         subscriptionExpiry: state.subscriptionExpiry,
         calculationHistory: state.calculationHistory,

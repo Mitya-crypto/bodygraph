@@ -3,16 +3,17 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, User, Crown, Settings } from 'lucide-react'
+import { ArrowLeft, User, Crown, Settings, Users } from 'lucide-react'
 import { ProfileList } from '@/components/ProfileList'
 import SubscriptionManager from '@/components/SubscriptionManager'
+import { MultipleProfilesManager } from '@/components/MultipleProfilesManager'
 import { profileManager } from '@/lib/profileManager'
 import { useAppStore } from '@/store/appStore'
 
 export function ProfileManagementScreen() {
   const { setUserProfile, triggerProfileUpdate, language } = useAppStore()
   const [telegramId, setTelegramId] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'profiles' | 'subscription'>('profiles')
+  const [activeTab, setActiveTab] = useState<'profiles' | 'multiple-profiles' | 'subscription'>('profiles')
   const [subscription, setSubscription] = useState<any>(null)
 
   useEffect(() => {
@@ -119,6 +120,17 @@ export function ProfileManagementScreen() {
               {language === 'ru' ? 'Профили' : 'Profiles'}
             </button>
             <button
+              onClick={() => setActiveTab('multiple-profiles')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                activeTab === 'multiple-profiles' 
+                  ? 'bg-cosmic-600 text-cosmic-100' 
+                  : 'text-cosmic-400 hover:text-cosmic-300'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              {language === 'ru' ? 'Семья' : 'Family'}
+            </button>
+            <button
               onClick={() => setActiveTab('subscription')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors ${
                 activeTab === 'subscription' 
@@ -145,6 +157,10 @@ export function ProfileManagementScreen() {
               onProfileSelect={handleProfileSelect}
               language={language}
             />
+          )}
+
+          {activeTab === 'multiple-profiles' && (
+            <MultipleProfilesManager />
           )}
 
           {activeTab === 'subscription' && (

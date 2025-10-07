@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useAppStore } from '@/store/appStore'
-import { Calculator, Zap, Star, ArrowLeft } from 'lucide-react'
+import { Calculator, Zap, Star, ArrowLeft, Heart } from 'lucide-react'
 
 export function ModuleSelectionScreen() {
   const { language } = useAppStore()
@@ -36,6 +36,15 @@ export function ModuleSelectionScreen() {
         : 'Natal chart, planets and transits',
       icon: Star,
       color: 'from-pink-500 to-pink-700'
+    },
+    {
+      id: 'synastry',
+      title: language === 'ru' ? 'Синастрия' : 'Synastry',
+      description: language === 'ru' 
+        ? 'Анализ совместимости по натальным картам' 
+        : 'Compatibility analysis through natal charts',
+      icon: Heart,
+      color: 'from-red-500 to-red-700'
     }
   ]
 
@@ -67,7 +76,7 @@ export function ModuleSelectionScreen() {
         </motion.div>
 
         {/* Modules Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {modules.map((module, index) => (
             <motion.div
               key={module.id}

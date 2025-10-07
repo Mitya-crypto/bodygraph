@@ -3,6 +3,8 @@
  * Включает все основные компоненты: планеты, ворота, центры, каналы, тип, стратегию, авторитет
  */
 
+import { UserData, AstrologyResult } from './types';
+
 // Убираем импорт Swiss Ephemeris из клиентского кода
 
 // Данные ворот Human Design
@@ -940,7 +942,16 @@ export class HumanDesignEngine {
 }
 
 // Экспортируем основную функцию для использования
-export async function calculateHumanDesign(birthData: BirthData): Promise<HumanDesignResult> {
+export async function calculateHumanDesign(userData: UserData, astrologyData?: AstrologyResult): Promise<HumanDesignResult> {
+  // Преобразуем UserData в формат BirthData для существующего движка
+  const birthData: BirthData = {
+    date: userData.birthDate,
+    time: userData.birthTime,
+    latitude: userData.birthLocation.latitude,
+    longitude: userData.birthLocation.longitude,
+    timezone: userData.birthLocation.timezone
+  };
+  
   const engine = new HumanDesignEngine(birthData)
   return await engine.calculate()
 }

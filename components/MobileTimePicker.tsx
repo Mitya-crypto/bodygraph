@@ -58,18 +58,6 @@ export function MobileTimePicker({
     onChange(newValue)
   }
 
-  // Быстрый выбор времени
-  const quickTimes = [
-    { label: 'Утром', value: '08:00' },
-    { label: 'Днем', value: '12:00' },
-    { label: 'Вечером', value: '18:00' },
-    { label: 'Ночью', value: '00:00' }
-  ]
-
-  const handleQuickSelect = (time: string) => {
-    setSelectedTime(time)
-    onChange(time)
-  }
 
   return (
     <div className={`relative ${className}`}>
@@ -107,26 +95,6 @@ export function MobileTimePicker({
         </div>
       </div>
 
-      {/* Быстрый выбор времени */}
-      <div className="mt-3">
-        <p className="text-xs text-cosmic-400 mb-2">Быстрый выбор:</p>
-        <div className="grid grid-cols-2 gap-2">
-          {quickTimes.map((time) => (
-            <button
-              key={time.value}
-              type="button"
-              onClick={() => handleQuickSelect(time.value)}
-              className={`px-3 py-2 text-xs rounded-lg border transition-colors ${
-                selectedTime === time.value
-                  ? 'bg-cosmic-500 border-cosmic-500 text-white'
-                  : 'bg-space-800 border-cosmic-500/30 text-cosmic-300 hover:bg-cosmic-500/20'
-              }`}
-            >
-              {time.label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Дополнительные элементы для десктопа */}
       <div className="hidden md:block mt-3">
